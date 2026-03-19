@@ -1,6 +1,6 @@
 # HIE Prototype — Frontend Developer Guide
 
-**Last updated: 2026-03-18**
+**Last updated: 2026-03-19**
 
 ---
 
@@ -19,8 +19,8 @@ eliminating the need to re-fill the same intake forms every visit.
 |-------|------|--------|-------|
 | 0 | Data model | ✅ COMPLETE | Do not modify — see locked files below |
 | 1 | Patient UI | 🔶 IN PROGRESS | Store + routing + ProfilePage done |
-| 2 | Sharing | ⬜ NOT STARTED | QR code, link, clipboard, print |
-| 3 | Consent & audit log | ⬜ NOT STARTED | Access log, token revocation |
+| 2 | Sharing | 🔶 IN PROGRESS | Core logic (sharing.ts) complete and tested — UI not yet built |
+| 3 | Consent & audit log | 🔶 IN PROGRESS | Core logic (accessLog.ts) complete and tested — UI not yet built |
 | 4 | Production / HIPAA | ⬜ DEFERRED | Auth, encryption, FHIR API |
 
 ### Layer 1 detailed status
@@ -65,7 +65,11 @@ src/
 │   ├── store.ts            ❌ Zustand store — all actions live here
 │   ├── schema.test.ts      ❌ Tests for schema + storage
 │   ├── store.test.ts       ❌ Tests for store actions
-│   └── integration.test.ts ❌ Cross-layer tests (store → storage → reload)
+│   ├── integration.test.ts ❌ Cross-layer tests (store → storage → reload)
+│   ├── sharing.ts          ❌ Layer 2 — sharing business logic (isTokenActive, shareUrl, getActiveTokens, getRevokedTokens, buildClipboardText)
+│   ├── sharing.test.ts     ❌ Tests for sharing.ts
+│   ├── accessLog.ts        ❌ Layer 3 — access log business logic (createLogEntry, filterByMethod, filterByDateRange, getActiveEntries, getRevokedEntries, revokeEntry, summariseLog)
+│   └── accessLog.test.ts   ❌ Tests for accessLog.ts
 │
 ├── components/             ✅ YOUR MAIN WORK AREA
 │   ├── PersonalDetailsForm.tsx   ✅ Complete — use as form pattern
@@ -170,9 +174,13 @@ Build after all other sections are complete. Read-only summary — no
 store writes. Read all sections from the store and display counts
 and key values (e.g. "3 medications", "2 allergies", name, DOB).
 
-### Step 6 — SharePage (Layer 2 — do not start yet)
-Deferred. Requires the sharing flow (QR, link, clipboard, print)
-which is Layer 2. Do not build this until Layer 1 is fully tested.
+### Step 6 — SharePage (Layer 2 + 3 — do not start yet)
+Deferred until Layer 1 UI is fully complete and tested. The core
+logic is ready: `src/core/sharing.ts` (token validation, URL
+generation, clipboard text) and `src/core/accessLog.ts` (log
+filtering, revocation, summary) are both complete. The SharePage
+UI and its components will import from these modules when the time
+comes. Do not build this until all Layer 1 pages are done.
 
 ---
 
@@ -445,6 +453,9 @@ Available from `usePatientStore` in `src/core/store.ts`.
 | `removeProcedure` | `(id: string) => void` | ProcedureList ⬜ |
 | `updateInsurancePrimary` | `(data: Partial<Insurance>) => void` | InsurancePrimaryForm ⬜ |
 | `updateInsuranceSecondary` | `(data: Partial<Insurance>) => void` | InsuranceSecondaryForm ⬜ |
+| `addShareToken` | `(token: ShareToken) => void` | SharePage ⬜ (Layer 2) |
+| `revokeShareToken` | `(token: string) => void` | SharePage ⬜ (Layer 2) |
+| `appendLog` | `(entry: AccessLogEntry) => void` | SharePage ⬜ (Layer 3) |
 
 ---
 
@@ -454,10 +465,12 @@ Always use these when creating new items. Never construct objects inline.
 All live in `src/core/schema.ts`.
 
 ```ts
-newMedication()   // blank Medication — status: 'active', source: 'self-reported'
-newVaccination()  // blank Vaccination — source: 'self-reported'
-newProcedure()    // blank Procedure — category: 'other'
-newAllergy()      // blank Allergy — severity: 'mild'
+newMedication()                           // blank Medication — status: 'active', source: 'self-reported'
+newVaccination()                          // blank Vaccination — source: 'self-reported'
+newProcedure()                            // blank Procedure — category: 'other'
+newAllergy()                              // blank Allergy — severity: 'mild'
+newShareToken(label)                      // ShareToken — active: true, expiresAt: null (Layer 2)
+newAccessLogEntry(method, token, label)   // AccessLogEntry — revoked: false (Layer 3)
 ```
 
 Usage pattern:

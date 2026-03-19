@@ -5,6 +5,8 @@ import {
   newVaccination,
   newProcedure,
   newAllergy,
+  newShareToken,
+  newAccessLogEntry,
 } from './schema';
 import { storage } from './storage';
 
@@ -61,6 +63,70 @@ describe('item factories', () => {
     expect(m.status).toBe('active');
     expect(m.source).toBe('self-reported');
     expect(m.endDate).toBeNull();
+  });
+});
+
+describe('newShareToken', () => {
+  it('creates a uuid token', () => {
+    const t = newShareToken('Dr. Rashid');
+    expect(t.token).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    );
+  });
+
+  it('two calls produce different tokens', () => {
+    expect(newShareToken('A').token).not.toBe(newShareToken('A').token);
+  });
+
+  it('stores the supplied label', () => {
+    expect(newShareToken('Inova Primary Care').label).toBe('Inova Primary Care');
+  });
+
+  it('defaults to active with no expiry', () => {
+    const t = newShareToken('Test');
+    expect(t.active).toBe(true);
+    expect(t.expiresAt).toBeNull();
+  });
+
+  it('createdAt is a valid ISO 8601 timestamp', () => {
+    const t = newShareToken('Test');
+    expect(new Date(t.createdAt).toISOString()).toBe(t.createdAt);
+  });
+});
+
+describe('newAccessLogEntry', () => {
+  it('creates a uuid id', () => {
+    const e = newAccessLogEntry('qr', null, 'Walk-in clinic');
+    expect(e.id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    );
+  });
+
+  it('two calls produce different ids', () => {
+    expect(newAccessLogEntry('link', null, 'A').id).not.toBe(
+      newAccessLogEntry('link', null, 'A').id
+    );
+  });
+
+  it('stores method, token, and label correctly', () => {
+    const e = newAccessLogEntry('clipboard', 'tok-123', 'Dr. Patel');
+    expect(e.method).toBe('clipboard');
+    expect(e.token).toBe('tok-123');
+    expect(e.label).toBe('Dr. Patel');
+  });
+
+  it('accepts null token', () => {
+    const e = newAccessLogEntry('print', null, 'Reception desk');
+    expect(e.token).toBeNull();
+  });
+
+  it('defaults revoked to false', () => {
+    expect(newAccessLogEntry('qr', null, 'Test').revoked).toBe(false);
+  });
+
+  it('timestamp is a valid ISO 8601 string', () => {
+    const e = newAccessLogEntry('link', null, 'Test');
+    expect(new Date(e.timestamp).toISOString()).toBe(e.timestamp);
   });
 });
 

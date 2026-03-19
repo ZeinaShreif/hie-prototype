@@ -9,8 +9,8 @@ repeatedly filling out the same medical forms.
 ## Current build status
 - Layer 0 (data model): COMPLETE — do not modify core/ types without discussion
 - Layer 1 (patient UI): IN PROGRESS — store complete, routing complete, integration tests complete, ProfilePage complete
-- Layer 2 (sharing): NOT STARTED
-- Layer 3 (consent/audit log): NOT STARTED
+- Layer 2 (sharing): IN PROGRESS — sharing.ts complete and tested
+- Layer 3 (consent/audit log): IN PROGRESS — accessLog.ts complete and tested
 - Layer 4 (production/HIPAA): NOT STARTED — deferred
 
 ## Tech stack
@@ -37,7 +37,9 @@ src/
 - Every list item (medication, allergy, etc.) must use a uuid id field,
   never an array index
 - All dates stored as ISO 8601 strings ("1978-03-04"), never Date objects
-- All new factory functions go in src/core/schema.ts and get a test
+- All new factory functions go in src/core/schema.ts and get a test.
+  If a module needs a factory under a different name or signature, it
+  re-exports and wraps from schema.ts — it does not define a second factory
 - App.tsx contains routing only — no store access, no business logic,
   no data fetching; if you need store data, put it in the page or component
 - Pages in src/pages/ compose components from src/components/ — form
@@ -55,6 +57,12 @@ src/
   store actions (updatePersonal, addAllergy, etc.) instead. Use
   selector form (`usePatientStore(s => s.record.medications)`) to
   subscribe only to the slice of state the component needs
+- Never use `window` or `document` inside src/core/ — core/ is pure
+  logic and must remain browser-agnostic. When a function needs browser
+  context (e.g. the current origin), accept it as an explicit parameter
+  from the caller. The `shareUrl(token, origin)` pattern in sharing.ts
+  is the correct model: the component passes `window.location.origin`,
+  core/ never touches it directly
 
 ## Data model
 The source of truth is src/core/types.ts. Every form field in the UI

@@ -14,9 +14,9 @@ Layer 4 is the production upgrade path.
 | Layer | Name | Status | Description |
 |-------|------|--------|-------------|
 | 0 | Data model | Complete | Types, schema, storage adapter |
-| 1 | Patient UI | Not started | Forms, tabs, overview screen |
-| 2 | Sharing | Not started | QR code, link, clipboard, print |
-| 3 | Consent & audit log | Not started | Access log, token revocation |
+| 1 | Patient UI | In progress | Store ✅ · routing ✅ · integration tests ✅ · ProfilePage ✅ · remaining pages 🔶 |
+| 2 | Sharing | In progress | Core logic complete (sharing.ts ✅) — UI not yet built |
+| 3 | Consent & audit log | In progress | Core logic complete (accessLog.ts ✅) — UI not yet built |
 | 4 | Production | Deferred | Auth, encryption, HIPAA, FHIR API |
 
 ---
@@ -25,13 +25,44 @@ Layer 4 is the production upgrade path.
 ```
 hie-prototype/
   src/
-    core/               Layer 0 — pure logic, no UI dependencies
-    components/         Layer 1 — reusable UI components
-    pages/              Layer 1 — full screen views
-    App.tsx             Routing only, no business logic
-    main.tsx            React entry point, do not edit
-  CLAUDE.md             Instructions for Claude Code sessions
-  ARCHITECTURE.md       This file
+    core/                     Layer 0 — pure logic, no UI dependencies
+      types.ts                ✅ Data model — do not modify
+      schema.ts               ✅ Factory functions
+      storage.ts              ✅ localStorage adapter
+      store.ts                ✅ Zustand store
+      sharing.ts              ✅ Layer 2 sharing logic
+      accessLog.ts            ✅ Layer 3 access log logic
+      schema.test.ts          ✅
+      store.test.ts           ✅
+      integration.test.ts     ✅
+      sharing.test.ts         ✅
+      accessLog.test.ts       ✅
+    components/               Layer 1 — reusable UI components
+      PersonalDetailsForm.tsx ✅
+      EmergencyContactForm.tsx ✅
+      AllergyList.tsx         ✅
+      ProfilePage.test.tsx    ✅
+      [MedicationList.tsx]    🔶 Not yet built
+      [VaccinationList.tsx]   🔶 Not yet built
+      [ProcedureList.tsx]     🔶 Not yet built
+      [InsurancePrimaryForm.tsx]   🔶 Not yet built
+      [InsuranceSecondaryForm.tsx] 🔶 Not yet built
+    pages/                    Layer 1 — screen-level views
+      ProfilePage.tsx         ✅
+      MedicationsPage.tsx     🔶 Placeholder
+      VaccinationsPage.tsx    🔶 Placeholder
+      ProceduresPage.tsx      🔶 Placeholder
+      InsurancePage.tsx       🔶 Placeholder
+      OverviewPage.tsx        🔶 Placeholder (build last)
+      SharePage.tsx           ⬜ Deferred — Layer 2+3 UI
+      pages.test.ts           ✅
+    App.tsx                   ✅ Routing only, no business logic
+    main.tsx                  React entry point, do not edit
+    test-setup.ts             Test bootstrap, do not edit
+  CLAUDE.md                   Instructions for Claude Code sessions
+  ARCHITECTURE.md             This file
+  FrontEnd_Instructions.md    Frontend developer guide
+  README.md                   Project overview
   package.json
   vite.config.ts
   tsconfig.json
@@ -127,6 +158,115 @@ Vitest tests for the factory functions and storage adapter.
 Run with `npm test`.
 Tests must pass before starting any new layer.
 Add a test here whenever a new factory function is added to schema.ts.
+
+Current factory coverage: `createEmptyPatientRecord`, `newMedication`,
+`newVaccination`, `newProcedure`, `newAllergy`, `newShareToken`,
+`newAccessLogEntry`.
+
+### src/core/sharing.ts
+Layer 2 pure business logic for the sharing feature. No React imports,
+no browser APIs, no localStorage access.
+
+Exports:
+- `isTokenActive(token: ShareToken): boolean` — returns true if
+  `token.active` is true and `expiresAt` is null or in the future.
+  Used internally by `getActiveTokens` and `getRevokedTokens`, and
+  should be used by any component that needs to gate on token validity.
+- `shareUrl(token: string, origin: string): string` — builds the
+  provider-facing view URL: `${origin}/view/${token}`. Caller must
+  supply `origin` (e.g. `window.location.origin`) because browser
+  globals are not allowed inside `src/core/`. **When Layer 2 is wired
+  into the frontend, `/view/:token` must be added as a route in
+  `App.tsx` with a corresponding `ViewPage` that reads the token from
+  `useParams` and looks it up in the store.**
+- `getActiveTokens(tokens: Record<string, ShareToken>): ShareToken[]`
+  — filters the `shareTokens` map to only usable (active,
+  non-expired) tokens. Used by the share screen to show live tokens.
+- `getRevokedTokens(tokens: Record<string, ShareToken>): ShareToken[]`
+  — inverse of `getActiveTokens`; returns revoked or expired tokens.
+  Used by the access log screen. `getActiveTokens` and
+  `getRevokedTokens` together partition the full token set with no
+  overlap.
+- `buildClipboardText(record: PatientRecord): string` — formats a
+  `PatientRecord` as a plain-text block for pasting into an intake
+  form. Omits blank fields. Only `status: 'active'` medications are
+  included. Sections: personal info, emergency contact, allergies,
+  medications, vaccinations, procedures/surgeries, primary insurance
+  (section omitted entirely when `insurancePrimary` is null).
+
+### src/core/sharing.test.ts
+Vitest tests for all five functions in `sharing.ts` (22 tests).
+
+Coverage:
+- `isTokenActive` — active/inactive flag, future/past expiry, and
+  that `active: false` overrides a future `expiresAt`.
+- `shareUrl` — correct URL format for production and localhost origins.
+- `getActiveTokens` — empty map, mixed active/revoked/expired tokens,
+  all-active case.
+- `getRevokedTokens` — empty map, mixed tokens, partition invariant
+  (active count + revoked count equals total token count).
+- `buildClipboardText` — patient name inclusion, empty-list "None
+  reported" message, allergy formatting, active-only medication
+  filtering, vaccination formatting, insurance section present/absent,
+  blank field omission, height/weight formatting.
+
+### src/core/accessLog.ts
+Layer 3 pure business logic for the access log and consent features.
+No React imports, no browser APIs, no localStorage access.
+
+Exports:
+- `LogSummary` — exported interface: `{ total: number, byMethod:
+  Record<'qr'|'link'|'print'|'clipboard', number>, revoked: number }`.
+  Returned by `summariseLog`.
+- `createLogEntry(method, label, token): AccessLogEntry` — factory
+  wrapper. Re-exports `newAccessLogEntry` from `schema.ts` with the
+  parameter order `(method, label, token)` rather than
+  `(method, token, label)`. The underlying factory stays in `schema.ts`
+  per the non-negotiable rule; this wrapper exists solely to provide
+  the caller-friendly signature. `revoked` defaults to `false`.
+- `filterByMethod(log, method): AccessLogEntry[]` — returns only
+  entries whose `method` field matches the given value (`'qr'`,
+  `'link'`, `'print'`, or `'clipboard'`).
+- `filterByDateRange(log, from, to): AccessLogEntry[]` — returns
+  entries whose `timestamp` falls within `[from, to]` inclusive. Both
+  bounds are ISO 8601 strings; comparison uses `Date` arithmetic so
+  partial date strings (e.g. `"2026-01-31"`) are interpreted as
+  midnight UTC. Does not mutate the input array.
+- `getActiveEntries(log): AccessLogEntry[]` — returns entries where
+  `revoked` is `false`.
+- `getRevokedEntries(log): AccessLogEntry[]` — returns entries where
+  `revoked` is `true`. `getActiveEntries` and `getRevokedEntries`
+  together partition the full log with no overlap.
+- `revokeEntry(log, id): AccessLogEntry[]` — returns a new array with
+  the entry matching `id` having `revoked` set to `true`. Pure
+  function — the original array is never mutated. If no entry matches,
+  the array is returned unchanged. The store calls this when a token
+  is revoked to keep log entries consistent with token state.
+- `summariseLog(log): LogSummary` — aggregates the log into a
+  `LogSummary` object. `total` always equals the sum of all
+  `byMethod` counts.
+
+### src/core/accessLog.test.ts
+Vitest tests for all seven exports in `accessLog.ts` (33 tests).
+
+Coverage:
+- `createLogEntry` — uuid id, uniqueness across calls, correct method/
+  label/token storage, null token, `revoked: false` default, valid ISO
+  timestamp.
+- `filterByMethod` — matching subset, empty log, single match, no
+  mutation of the original array.
+- `filterByDateRange` — inclusive range, exclusion outside range,
+  empty result when nothing matches, empty log, exact boundary match.
+- `getActiveEntries` — mixed log, all-active, all-revoked, empty log.
+- `getRevokedEntries` — mixed log, none revoked, empty log, partition
+  invariant (`getActiveEntries` + `getRevokedEntries` lengths equal
+  total log length).
+- `revokeEntry` — target entry flipped, other entries unaffected,
+  original array not mutated, new array reference returned, no-op when
+  id does not match.
+- `summariseLog` — zero counts on empty log, total count, per-method
+  counts for all four methods, revoked count, invariant that
+  `total === sum(byMethod)`.
 
 ### src/core/integration.test.ts
 Cross-layer tests that verify the full write path: store action →

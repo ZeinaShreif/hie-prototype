@@ -1,7 +1,7 @@
 // schema.ts — factory functions and defaults
 
 import { v4 as uuidv4 } from 'uuid';
-import type { PatientRecord, Medication, Vaccination, Procedure, Allergy } from './types';
+import type { PatientRecord, Medication, Vaccination, Procedure, Allergy, ShareToken, AccessLogEntry } from './types';
 
 export function createEmptyPatientRecord(): PatientRecord {
   return {
@@ -45,4 +45,25 @@ export const newProcedure = (): Procedure => ({
 
 export const newAllergy = (): Allergy => ({
   id: uuidv4(), substance: '', reaction: '', severity: 'mild',
+});
+
+export const newShareToken = (label: string): ShareToken => ({
+  token: uuidv4(),
+  createdAt: new Date().toISOString(),
+  expiresAt: null,
+  label,
+  active: true,
+});
+
+export const newAccessLogEntry = (
+  method: AccessLogEntry['method'],
+  token: string | null,
+  label: string,
+): AccessLogEntry => ({
+  id: uuidv4(),
+  timestamp: new Date().toISOString(),
+  method,
+  token,
+  label,
+  revoked: false,
 });

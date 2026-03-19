@@ -21,8 +21,8 @@ A patient-controlled health information exchange prototype. Patients fill in the
 |-------|------|--------|
 | 0 | Data model | ✅ Complete |
 | 1 | Patient UI | 🔶 In progress |
-| 2 | Sharing | ⬜ Not started |
-| 3 | Consent & audit log | ⬜ Not started |
+| 2 | Sharing | 🔶 In progress |
+| 3 | Consent & audit log | 🔶 In progress |
 | 4 | Production / HIPAA | ⬜ Deferred |
 
 Layer 1 progress: store ✅ · routing ✅ · integration tests ✅ · ProfilePage ✅ · remaining pages 🔶
@@ -74,4 +74,6 @@ src/
   main.tsx       React entry point
 ```
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full file reference and [FrontEnd_Instructions.md](./FrontEnd_Instructions.md) for the component patterns, styling guide, and build order.
+Core logic for Layers 2 and 3 (`sharing.ts`, `accessLog.ts`) lives in `src/core/`. UI for those layers is not yet built.
+
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full annotated file reference and [FrontEnd_Instructions.md](./FrontEnd_Instructions.md) for component patterns, styling guide, and build order.
