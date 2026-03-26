@@ -42,6 +42,7 @@ interface PatientStore {
   // Insurance
   updateInsurancePrimary: (data: Partial<Insurance>) => void;
   updateInsuranceSecondary: (data: Partial<Insurance>) => void;
+  clearInsuranceSecondary: () => void;
 
   // Sharing
   addShareToken: (token: ShareToken) => void;
@@ -231,6 +232,13 @@ export const usePatientStore = create<PatientStore>()(
             ...s.record,
             insuranceSecondary: { ...current, ...data },
           };
+          storage.saveRecord(updated);
+          return { record: updated };
+        }),
+
+      clearInsuranceSecondary: () =>
+        set((s) => {
+          const updated = { ...s.record, insuranceSecondary: null };
           storage.saveRecord(updated);
           return { record: updated };
         }),

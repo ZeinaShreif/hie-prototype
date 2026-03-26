@@ -4,7 +4,7 @@ export interface PersonalDetails {
   firstName: string;
   lastName: string;
   dateOfBirth: string;        // ISO 8601: "1978-03-04"
-  gender: string;
+  sex: string;
   address: string;
   city: string;
   state: string;
@@ -14,7 +14,7 @@ export interface PersonalDetails {
   heightFt: number | null;
   heightIn: number | null;
   weightLbs: number | null;
-  primaryLanguage: string;
+  preferredLanguage: string;
   maritalStatus: string;
   bloodType: string;
 }

@@ -25,7 +25,7 @@ A patient-controlled health information exchange prototype. Patients fill in the
 | 3 | Consent & audit log | 🔶 In progress |
 | 4 | Production / HIPAA | ⬜ Deferred |
 
-Layer 1 progress: store ✅ · routing ✅ · integration tests ✅ · ProfilePage ✅ · remaining pages 🔶
+Layer 1 progress: store ✅ · routing ✅ · integration tests ✅ · ProfilePage ✅ · InsurancePage ✅ · remaining pages (Medications, Vaccinations, Procedures, Overview) 🔶
 
 ---
 

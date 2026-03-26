@@ -52,7 +52,7 @@ export function buildClipboardText(record: PatientRecord): string {
   lines.push('PERSONAL INFORMATION');
   field('Name', `${p.firstName} ${p.lastName}`.trim());
   field('Date of Birth', p.dateOfBirth);
-  field('Gender', p.gender);
+  field('Sex', p.sex);
   field('Blood Type', p.bloodType);
   field('Address', [p.address, p.city, p.state, p.zip].filter(Boolean).join(', '));
   field('Phone', p.phone);
@@ -62,7 +62,7 @@ export function buildClipboardText(record: PatientRecord): string {
   if (p.heightIn !== null) heightParts.push(`${p.heightIn}"`);
   if (heightParts.length) field('Height', heightParts.join(' '));
   if (p.weightLbs !== null) field('Weight', `${p.weightLbs} lbs`);
-  field('Primary Language', p.primaryLanguage);
+  field('Preferred Language', p.preferredLanguage);
   field('Marital Status', p.maritalStatus);
   lines.push('');
 

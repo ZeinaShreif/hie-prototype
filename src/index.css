@@ -1,1 +1,108 @@
 @import "tailwindcss";
+
+/* ── Design tokens ──────────────────────────────────────────────────────────
+   Registering colours in @theme makes them available as Tailwind utilities:
+   bg-navy, text-cyan, bg-ice, border-ice-border, etc.
+   Tailwind v4 also exposes them as CSS custom properties (--color-*) under :root.
+────────────────────────────────────────────────────────────────────────── */
+@theme {
+  --color-navy:        #03045E;
+  --color-cyan:        #0096C7;
+  --color-cyan-bright: #00B4D8;
+  --color-cyan-light:  #90E0EF;
+  --color-ice:         #EFF8FB;
+  --color-ice-border:  #CAE9F5;
+  --color-ice-divider: #EAF5FB;
+  --color-label:       #90B8CC;
+  --color-text-dark:   #03045E;
+  --color-muted:       #4A6FA5;
+}
+
+/* Short-name aliases so inline styles can still use var(--navy) etc. */
+:root {
+  --navy:        var(--color-navy);
+  --cyan:        var(--color-cyan);
+  --cyan-bright: var(--color-cyan-bright);
+  --cyan-light:  var(--color-cyan-light);
+  --ice:         var(--color-ice);
+  --ice-border:  var(--color-ice-border);
+  --ice-divider: var(--color-ice-divider);
+  --label-color: var(--color-label);
+  --text-dark:   var(--color-text-dark);
+  --muted:       var(--color-muted);
+}
+
+/* ── Shared component classes ───────────────────────────────────────────────
+   Defined with @layer components + @apply so they can be overridden by
+   Tailwind utilities and don't leak into the utilities layer.
+────────────────────────────────────────────────────────────────────────── */
+@layer components {
+
+  /* Field label: small, uppercased, muted */
+  .hie-label {
+    @apply block uppercase font-bold tracking-[0.7px] text-[10px] mb-1;
+    color: var(--label-color);
+  }
+
+  /* Field input: visible box with focus shadow ring */
+  .hie-input {
+    @apply w-full outline-none text-[13px] font-semibold;
+    @apply placeholder:italic placeholder:font-normal;
+    background-color: var(--ice);
+    border: 1px solid var(--ice-border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    margin-top: 2px;
+    color: var(--text-dark);
+  }
+  .hie-input:focus {
+    color: var(--cyan);
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 3px rgba(0, 150, 199, 0.15);
+  }
+
+  /* Grid cell — right column or full-width */
+  .hie-field {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--ice-divider);
+  }
+
+  /* Grid cell — left column (adds right divider) */
+  .hie-field-left {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--ice-divider);
+    border-right: 1px solid var(--ice-divider);
+  }
+
+
+  /* White rounded card that wraps each section */
+  .hie-section {
+    @apply overflow-hidden;
+    background: white;
+    border-radius: 12px;
+    border: 1.5px solid var(--ice-border);
+    margin-bottom: 12px;
+  }
+
+  /* Section card top bar */
+  .hie-section-header {
+    @apply flex items-center justify-between;
+    padding: 13px 16px 11px;
+    border-bottom: 1.5px solid var(--ice-divider);
+  }
+
+  /* Section heading text */
+  .hie-section-title {
+    @apply uppercase font-extrabold tracking-[0.9px] m-0;
+    font-size: 11px;
+    color: var(--text-dark);
+  }
+
+  /* Restore native calendar/time picker button that preflight can suppress */
+  .hie-input[type="date"]::-webkit-calendar-picker-indicator,
+  .hie-input[type="time"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 1;
+  }
+
+}

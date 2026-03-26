@@ -4,7 +4,7 @@ import AllergyList from '../components/AllergyList';
 
 export default function ProfilePage() {
   return (
-    <div>
+    <div className="p-4">
       <PersonalDetailsForm />
       <EmergencyContactForm />
       <AllergyList />

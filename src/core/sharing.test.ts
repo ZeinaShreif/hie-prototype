@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { isTokenActive, shareUrl, getActiveTokens, getRevokedTokens, buildClipboardText } from './sharing';
-import type { ShareToken, PatientRecord } from './types';
+import type { ShareToken } from './types';
 import { createEmptyPatientRecord } from './schema';
 
 // ---------------------------------------------------------------------------

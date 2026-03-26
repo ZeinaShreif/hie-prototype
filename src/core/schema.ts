@@ -10,10 +10,10 @@ export function createEmptyPatientRecord(): PatientRecord {
     updatedAt: new Date().toISOString(),
     personal: {
       firstName: '', lastName: '', dateOfBirth: '',
-      gender: '', address: '', city: '', state: '', zip: '',
+      sex: '', address: '', city: '', state: '', zip: '',
       phone: '', email: '',
       heightFt: null, heightIn: null, weightLbs: null,
-      primaryLanguage: '', maritalStatus: '', bloodType: '',
+      preferredLanguage: '', maritalStatus: '', bloodType: '',
     },
     emergencyContact: { name: '', relationship: '', phone: '' },
     allergies: [],

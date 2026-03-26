@@ -1,6 +1,6 @@
 # HIE Prototype — Frontend Developer Guide
 
-**Last updated: 2026-03-19**
+**Last updated: 2026-03-25**
 
 ---
 
@@ -13,7 +13,7 @@ eliminating the need to re-fill the same intake forms every visit.
 
 ---
 
-## Current build status (2026-03-18)
+## Current build status (2026-03-25)
 
 | Layer | Name | Status | Notes |
 |-------|------|--------|-------|
@@ -31,7 +31,7 @@ eliminating the need to re-fill the same intake forms every visit.
 | MedicationsPage | `/medications` | 🔶 Placeholder | MedicationList ⬜ |
 | VaccinationsPage | `/vaccinations` | 🔶 Placeholder | VaccinationList ⬜ |
 | ProceduresPage | `/procedures` | 🔶 Placeholder | ProcedureList ⬜ |
-| InsurancePage | `/insurance` | 🔶 Placeholder | InsurancePrimaryForm ⬜, InsuranceSecondaryForm ⬜ |
+| InsurancePage | `/insurance` | ✅ Complete | InsurancePrimaryForm ✅, InsuranceSecondaryForm ✅ |
 | OverviewPage | `/` | 🔶 Placeholder | Summary cards ⬜ (build last) |
 | SharePage | `/share` | ⬜ Deferred | Layer 2 — do not build yet |
 
@@ -72,29 +72,32 @@ src/
 │   └── accessLog.test.ts   ❌ Tests for accessLog.ts
 │
 ├── components/             ✅ YOUR MAIN WORK AREA
+│   ├── PageHeader.tsx            ✅ Complete — navy header, avatar, progress bar, nav tabs
 │   ├── PersonalDetailsForm.tsx   ✅ Complete — use as form pattern
 │   ├── EmergencyContactForm.tsx  ✅ Complete
 │   ├── AllergyList.tsx           ✅ Complete — use as list pattern
+│   ├── StateCombobox.tsx         ✅ Complete — searchable US state dropdown
+│   ├── formatPhone.ts            ✅ Complete — phone auto-formatting utility
 │   ├── ProfilePage.test.tsx      ✅ Complete — add new test blocks here
 │   └── [MedicationList.tsx]      ⬜ You build this next
 │   └── [VaccinationList.tsx]     ⬜ You build this
 │   └── [ProcedureList.tsx]       ⬜ You build this
-│   └── [InsurancePrimaryForm.tsx] ⬜ You build this
-│   └── [InsuranceSecondaryForm.tsx] ⬜ You build this
+│   ├── InsurancePrimaryForm.tsx  ✅ Complete — 6-field form, id prefix "primary"
+│   └── InsuranceSecondaryForm.tsx ✅ Complete — opt-in with add/remove, id prefix "secondary"
 │
 ├── pages/                  ✅ WIRE COMPONENTS IN HERE
 │   ├── ProfilePage.tsx     ✅ Complete — use as page pattern
 │   ├── MedicationsPage.tsx 🔶 Placeholder — needs MedicationList
 │   ├── VaccinationsPage.tsx 🔶 Placeholder — needs VaccinationList
 │   ├── ProceduresPage.tsx  🔶 Placeholder — needs ProcedureList
-│   ├── InsurancePage.tsx   🔶 Placeholder — needs Insurance forms
+│   ├── InsurancePage.tsx   ✅ Complete
 │   ├── OverviewPage.tsx    🔶 Placeholder — build last
 │   ├── SharePage.tsx       ⬜ Deferred — do not build yet
 │   └── pages.test.ts       ✅ Smoke tests — update if you add a page
 │
-├── App.tsx                 ⚠️  ROUTING ONLY — do not add logic here
+├── App.tsx                 ⚠️  ROUTING ONLY — renders PageHeader + Routes, no logic
 ├── main.tsx                ❌ DO NOT MODIFY
-├── index.css               ⚠️  Tailwind entry — do not add custom CSS
+├── index.css               ⚠️  Tailwind entry + design tokens + hie-* classes — do not add ad-hoc CSS
 └── test-setup.ts           ⚠️  Test bootstrap — do not modify
 ```
 
@@ -149,25 +152,20 @@ Fields (from `Procedure` in types.ts):
 Store actions: `addProcedure`, `updateProcedure`, `removeProcedure`
 Factory: `newProcedure()`
 
-### Step 4 — InsurancePrimaryForm.tsx + InsuranceSecondaryForm.tsx
-Create both, update `InsurancePage.tsx` to render both.
+### Step 4 — InsurancePrimaryForm.tsx + InsuranceSecondaryForm.tsx ✅ COMPLETE
+Both built, `InsurancePage.tsx` wired up.
 
-Fields (from `Insurance` in types.ts):
-- `carrier` — text input
-- `planName` — text input
-- `memberId` — text input
-- `groupNumber` — text input
-- `policyHolderName` — text input
-- `effectiveDate` — date input
+Fields (from `Insurance` in types.ts): `carrier`, `planName`,
+`memberId`, `groupNumber`, `policyHolderName`, `effectiveDate`.
 
-Store actions:
-- Primary form: `updateInsurancePrimary`
-- Secondary form: `updateInsuranceSecondary`
+Store actions: `updateInsurancePrimary`, `updateInsuranceSecondary`,
+`clearInsuranceSecondary` (sets secondary back to `null` — used by
+the "Remove" button on `InsuranceSecondaryForm`).
 
-Note: `insuranceSecondary` is `null` by default. Make the secondary
-form opt-in — show a "Add secondary insurance" toggle, and only
-render the form when the user opts in. Do not call
-`updateInsuranceSecondary` until the user activates the secondary section.
+Secondary form is opt-in: collapsed to an "+ Add secondary insurance"
+button when `insuranceSecondary` is `null`; a "Remove" button in the
+section header collapses and clears it. Auto-expands on mount if data
+was previously saved.
 
 ### Step 5 — OverviewPage
 Build after all other sections are complete. Read-only summary — no
@@ -201,22 +199,42 @@ export default function MyForm() {
   const updateData = usePatientStore((s) => s.updateSomeSection);
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-slate-800">Section Title</h2>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div className="hie-section">
+      <div className="hie-section-header">
+        <h2 className="hie-section-title">Section Title</h2>
+      </div>
 
-        {/* 2. Each field: label with htmlFor, input with matching id */}
-        <div>
-          <label htmlFor="myFieldId" className="block text-sm font-medium text-slate-700 mb-1">
-            Field Label
-          </label>
+      <div className="grid grid-cols-2">
+
+        {/* Left-column cell */}
+        <div className="hie-field-left">
+          <label htmlFor="myFieldId" className="hie-label">Field Label</label>
           <input
             id="myFieldId"
             type="text"
             value={data.fieldName}
             onChange={(e) => updateData({ fieldName: e.target.value })}
-            className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="hie-input"
+            placeholder="Placeholder text"
           />
+        </div>
+
+        {/* Right-column cell */}
+        <div className="hie-field">
+          <label htmlFor="anotherFieldId" className="hie-label">Another Field</label>
+          <input
+            id="anotherFieldId"
+            type="text"
+            value={data.anotherField}
+            onChange={(e) => updateData({ anotherField: e.target.value })}
+            className="hie-input"
+          />
+        </div>
+
+        {/* Full-width cell */}
+        <div className="col-span-2 hie-field">
+          <label htmlFor="fullWidthId" className="hie-label">Full Width Field</label>
+          <input id="fullWidthId" type="text" className="hie-input" ... />
         </div>
 
       </div>
@@ -232,10 +250,12 @@ Key rules:
 
 ### List component pattern (AllergyList)
 
+See `src/components/AllergyList.tsx` for the full reference. The
+general structure:
+
 ```tsx
 import { usePatientStore } from '../core/store';
 import { newItem } from '../core/schema';
-import type { ItemType } from '../core/types';
 
 export default function ItemList() {
   const items = usePatientStore((s) => s.record.items);
@@ -244,49 +264,44 @@ export default function ItemList() {
   const removeItem = usePatientStore((s) => s.removeItem);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-800">Items</h2>
-        <button
-          onClick={() => addItem(newItem())}
-          className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          Add
-        </button>
+    <div className="hie-section">
+      <div className="hie-section-header">
+        <h2 className="hie-section-title">Items</h2>
+        {/* Optional count badge */}
       </div>
 
-      {items.length === 0 && (
-        <p className="text-sm text-slate-500">No items recorded.</p>
-      )}
+      {/* List content area */}
+      <div style={{ padding: '12px 16px 4px' }}>
+        {items.length === 0 && (
+          <p className="text-sm italic" style={{ color: 'var(--label-color)' }}>
+            No items recorded.
+          </p>
+        )}
 
-      <div className="space-y-3">
         {items.map((item) => (
-          <div key={item.id} className="grid grid-cols-1 gap-3 rounded border border-slate-200 p-4 sm:grid-cols-3">
-
+          <div key={item.id}>
             {/* inline-editable fields — onChange calls updateItem immediately */}
-            <div>
-              <label htmlFor={`itemName-${item.id}`} className="block text-sm font-medium text-slate-700 mb-1">
-                Name
-              </label>
-              <input
-                id={`itemName-${item.id}`}
-                type="text"
-                value={item.name}
-                onChange={(e) => updateItem(item.id, { name: e.target.value })}
-                className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
+            <input
+              id={`itemName-${item.id}`}
+              type="text"
+              value={item.name}
+              onChange={(e) => updateItem(item.id, { name: e.target.value })}
+              className="hie-input"
+            />
             {/* Delete button always uses item.id — never array index */}
-            <button
-              onClick={() => removeItem(item.id)}
-              className="rounded border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
-            >
-              Delete
-            </button>
+            <button onClick={() => removeItem(item.id)} aria-label="Delete">×</button>
           </div>
         ))}
       </div>
+
+      {/* Add row at the bottom */}
+      <button
+        aria-label="Add"
+        onClick={() => addItem(newItem())}
+        style={{ borderTop: '1px solid var(--ice-divider)', padding: '10px 16px 12px' }}
+      >
+        + Add item
+      </button>
     </div>
   );
 }
@@ -301,7 +316,9 @@ are uniquely associated. See the id prefixing rules below.
 
 ## Page pattern
 
-Pages are thin wrappers. No store access, no business logic.
+Pages are thin wrappers. No store access, no business logic. Wrap
+content in `<div className="p-4">` to add the standard page padding
+inside the mobile shell.
 
 ```tsx
 import MyComponent from '../components/MyComponent';
@@ -309,7 +326,7 @@ import AnotherComponent from '../components/AnotherComponent';
 
 export default function MyPage() {
   return (
-    <div>
+    <div className="p-4">
       <MyComponent />
       <AnotherComponent />
     </div>
@@ -323,32 +340,47 @@ export default function MyPage() {
 
 ### How Tailwind is set up
 - Configured via the `@tailwindcss/vite` plugin — **no `tailwind.config.js`** needed.
-- `src/index.css` contains only `@import "tailwindcss";` — do not add custom CSS there.
-- All styling uses Tailwind utility classes on JSX elements.
+- `src/index.css` is the CSS entry point. It imports Tailwind and adds:
+  - **`@theme` block** — registers design tokens as Tailwind utility classes
+    (`bg-navy`, `text-cyan`, `bg-ice`, `border-ice-border`, etc.) and as
+    CSS custom properties (`--color-navy`, etc.).
+  - **`:root` block** — short-name aliases (`--navy`, `--cyan`, `--ice`,
+    `--label-color`, `--text-dark`, `--muted`, etc.) for use in inline styles.
+  - **`@layer components` block** — shared CSS component classes used
+    throughout all form components.
 
-### Utility classes used consistently across the project
+### Shared component classes (`hie-*`)
 
-| Purpose | Classes |
-|---------|---------|
-| Section heading | `text-lg font-semibold text-slate-800` |
-| Label | `block text-sm font-medium text-slate-700 mb-1` |
-| Text input / select | `w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500` |
-| Row card (list item) | `grid grid-cols-1 gap-3 rounded border border-slate-200 p-4 sm:grid-cols-3` |
-| Form grid | `grid grid-cols-1 gap-4 sm:grid-cols-2` |
-| Vertical spacing | `space-y-4` (list), `space-y-6` (form) |
-| Add button | `rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700` |
-| Delete button | `rounded border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50` |
-| Header row (title + button) | `flex items-center justify-between` |
-| Empty state text | `text-sm text-slate-500` |
-| Full-width span (2 cols) | `sm:col-span-2` |
+| Class | Purpose |
+|-------|---------|
+| `.hie-label` | Field label — small, uppercase, muted (`--label-color`) |
+| `.hie-input` | Text/select/date input — ice background, focus ring in cyan |
+| `.hie-field` | Grid cell (right column or full-width) with bottom divider |
+| `.hie-field-left` | Grid cell (left column) with bottom + right divider |
+| `.hie-section` | White rounded card wrapping each section |
+| `.hie-section-header` | Top bar of a section card (flex, title + optional badge) |
+| `.hie-section-title` | Section heading text — uppercase, extrabold, navy |
+
+### Design tokens (color palette)
+
+| Token | Value | Tailwind class |
+|-------|-------|----------------|
+| `--navy` / `--color-navy` | `#03045E` | `bg-navy`, `text-navy` |
+| `--cyan` / `--color-cyan` | `#0096C7` | `bg-cyan`, `text-cyan` |
+| `--cyan-bright` | `#00B4D8` | `bg-cyan-bright` |
+| `--cyan-light` | `#90E0EF` | `text-cyan-light` |
+| `--ice` / `--color-ice` | `#EFF8FB` | `bg-ice` |
+| `--ice-border` | `#CAE9F5` | `border-ice-border` |
+| `--ice-divider` | `#EAF5FB` | — (used in CSS classes) |
+| `--label-color` | `#90B8CC` | — (used via CSS var) |
+| `--text-dark` | `#03045E` | — (used via CSS var) |
+| `--muted` | `#4A6FA5` | — (used via CSS var) |
 
 ### To customize the visual style
-Change the Tailwind classes directly on the elements. All styling
-is co-located with the component markup — there are no separate
-CSS files to update.
-
-To change the color scheme across the whole app, do a search-and-replace
-on the color tokens (e.g. replace `blue-600` with `indigo-600` everywhere).
+Change the design tokens in `src/index.css` `@theme` / `:root` to
+retheme the whole app. For per-component tweaks, edit the `hie-*`
+classes in the `@layer components` block or override with Tailwind
+utilities on the element.
 
 ---
 
@@ -451,8 +483,9 @@ Available from `usePatientStore` in `src/core/store.ts`.
 | `addProcedure` | `(item: Procedure) => void` | ProcedureList ⬜ |
 | `updateProcedure` | `(id, data: Partial<Procedure>) => void` | ProcedureList ⬜ |
 | `removeProcedure` | `(id: string) => void` | ProcedureList ⬜ |
-| `updateInsurancePrimary` | `(data: Partial<Insurance>) => void` | InsurancePrimaryForm ⬜ |
-| `updateInsuranceSecondary` | `(data: Partial<Insurance>) => void` | InsuranceSecondaryForm ⬜ |
+| `updateInsurancePrimary` | `(data: Partial<Insurance>) => void` | InsurancePrimaryForm ✅ |
+| `updateInsuranceSecondary` | `(data: Partial<Insurance>) => void` | InsuranceSecondaryForm ✅ |
+| `clearInsuranceSecondary` | `() => void` | InsuranceSecondaryForm ✅ — sets secondary to null |
 | `addShareToken` | `(token: ShareToken) => void` | SharePage ⬜ (Layer 2) |
 | `revokeShareToken` | `(token: string) => void` | SharePage ⬜ (Layer 2) |
 | `appendLog` | `(entry: AccessLogEntry) => void` | SharePage ⬜ (Layer 3) |
@@ -555,10 +588,12 @@ In this order:
 
 1. `src/core/types.ts` — understand every data shape before writing a form
 2. `src/core/schema.ts` — see what factory functions exist
-3. `src/components/AllergyList.tsx` — the list component pattern
-4. `src/components/PersonalDetailsForm.tsx` — the form component pattern
-5. `src/components/ProfilePage.test.tsx` — how tests are structured
-6. `src/pages/ProfilePage.tsx` — how a page composes components
+3. `src/index.css` — understand the `hie-*` CSS classes and color tokens
+4. `src/components/AllergyList.tsx` — the list component pattern
+5. `src/components/PersonalDetailsForm.tsx` — the form component pattern
+   (note: includes imperial/metric toggle, `StateCombobox`, and `formatPhone`)
+6. `src/components/ProfilePage.test.tsx` — how tests are structured
+7. `src/pages/ProfilePage.tsx` — how a page composes components
 
 That's enough to build the next three components (MedicationList,
 VaccinationList, ProcedureList) without touching anything else.

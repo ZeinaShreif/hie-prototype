@@ -1,3 +1,11 @@
+import InsurancePrimaryForm from '../components/InsurancePrimaryForm';
+import InsuranceSecondaryForm from '../components/InsuranceSecondaryForm';
+
 export default function InsurancePage() {
-  return <h1>Insurance</h1>;
+  return (
+    <div className="p-4">
+      <InsurancePrimaryForm />
+      <InsuranceSecondaryForm />
+    </div>
+  );
 }

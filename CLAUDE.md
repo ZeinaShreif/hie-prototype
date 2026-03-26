@@ -8,7 +8,7 @@ repeatedly filling out the same medical forms.
 
 ## Current build status
 - Layer 0 (data model): COMPLETE — do not modify core/ types without discussion
-- Layer 1 (patient UI): IN PROGRESS — store complete, routing complete, integration tests complete, ProfilePage complete
+- Layer 1 (patient UI): IN PROGRESS — store complete, routing complete, integration tests complete, ProfilePage ✅, InsurancePage ✅, remaining pages (Medications, Vaccinations, Procedures, Overview) 🔶
 - Layer 2 (sharing): IN PROGRESS — sharing.ts complete and tested
 - Layer 3 (consent/audit log): IN PROGRESS — accessLog.ts complete and tested
 - Layer 4 (production/HIPAA): NOT STARTED — deferred
@@ -26,9 +26,18 @@ src/
   core/         ← Layer 0. Pure logic, no React imports, no browser APIs
                    except via storage.ts. Never modify types.ts without
                    updating schema.test.ts.
-  components/   ← Layer 1 UI components (create this in Layer 1)
-  pages/        ← Layer 1 screen-level components (create this in Layer 1)
-  App.tsx       ← routing only, no business logic
+  components/   ← Layer 1 UI components
+                   PageHeader.tsx — navy header with avatar, progress bar, nav tabs
+                   PersonalDetailsForm.tsx — imperial/metric toggle, StateCombobox, formatPhone
+                   EmergencyContactForm.tsx
+                   AllergyList.tsx — pill-tag list, inline editable
+                   StateCombobox.tsx — searchable US state dropdown
+                   formatPhone.ts — phone auto-formatting utility
+                   InsurancePrimaryForm.tsx — 6-field form, id prefix "primary"
+                   InsuranceSecondaryForm.tsx — opt-in form with add/remove toggle, id prefix "secondary"
+  pages/        ← Layer 1 screen-level components
+                   ProfilePage.tsx ✅ · InsurancePage.tsx ✅ · remaining pages 🔶 placeholder only
+  App.tsx       ← routing only — renders PageHeader + Routes, no business logic
 ```
 
 ## Non-negotiable rules

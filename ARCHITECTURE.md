@@ -14,7 +14,7 @@ Layer 4 is the production upgrade path.
 | Layer | Name | Status | Description |
 |-------|------|--------|-------------|
 | 0 | Data model | Complete | Types, schema, storage adapter |
-| 1 | Patient UI | In progress | Store ✅ · routing ✅ · integration tests ✅ · ProfilePage ✅ · remaining pages 🔶 |
+| 1 | Patient UI | In progress | Store ✅ · routing ✅ · integration tests ✅ · ProfilePage ✅ · InsurancePage ✅ · remaining pages (Medications, Vaccinations, Procedures, Overview) 🔶 |
 | 2 | Sharing | In progress | Core logic complete (sharing.ts ✅) — UI not yet built |
 | 3 | Consent & audit log | In progress | Core logic complete (accessLog.ts ✅) — UI not yet built |
 | 4 | Production | Deferred | Auth, encryption, HIPAA, FHIR API |
@@ -38,21 +38,24 @@ hie-prototype/
       sharing.test.ts         ✅
       accessLog.test.ts       ✅
     components/               Layer 1 — reusable UI components
+      PageHeader.tsx          ✅ Navy header with avatar, progress bar, nav tabs
       PersonalDetailsForm.tsx ✅
       EmergencyContactForm.tsx ✅
       AllergyList.tsx         ✅
+      StateCombobox.tsx       ✅ Searchable US state dropdown
+      formatPhone.ts          ✅ Phone auto-formatting utility
       ProfilePage.test.tsx    ✅
       [MedicationList.tsx]    🔶 Not yet built
       [VaccinationList.tsx]   🔶 Not yet built
       [ProcedureList.tsx]     🔶 Not yet built
-      [InsurancePrimaryForm.tsx]   🔶 Not yet built
-      [InsuranceSecondaryForm.tsx] 🔶 Not yet built
+      InsurancePrimaryForm.tsx     ✅ 6-field form, id prefix "primary"
+      InsuranceSecondaryForm.tsx   ✅ opt-in form with add/remove toggle, id prefix "secondary"
     pages/                    Layer 1 — screen-level views
       ProfilePage.tsx         ✅
       MedicationsPage.tsx     🔶 Placeholder
       VaccinationsPage.tsx    🔶 Placeholder
       ProceduresPage.tsx      🔶 Placeholder
-      InsurancePage.tsx       🔶 Placeholder
+      InsurancePage.tsx       ✅
       OverviewPage.tsx        🔶 Placeholder (build last)
       SharePage.tsx           ⬜ Deferred — Layer 2+3 UI
       pages.test.ts           ✅
@@ -75,11 +78,44 @@ hie-prototype/
 ### Tailwind CSS
 Tailwind is configured via the `@tailwindcss/vite` plugin in
 `vite.config.ts` — no `tailwind.config.js` file is needed.
-`src/index.css` is the CSS entry point and contains only:
+`src/index.css` is the CSS entry point. It imports Tailwind and then
+defines project-specific design tokens and shared component classes:
+
 ```css
 @import "tailwindcss";
+
+@theme {
+  /* registers colours as Tailwind utilities (bg-navy, text-cyan, etc.)
+     and as CSS custom properties (--color-navy, etc.) */
+}
+
+:root {
+  /* short-name aliases: var(--navy), var(--cyan), etc. for inline styles */
+}
+
+@layer components {
+  /* shared CSS classes used by all form components:
+     .hie-label, .hie-input, .hie-field, .hie-field-left,
+     .hie-section, .hie-section-header, .hie-section-title */
+}
 ```
-All component styling uses Tailwind utility classes directly.
+
+Component styling uses a combination of Tailwind utility classes and
+the shared `hie-*` component classes defined in `src/index.css`.
+
+### PageHeader
+`src/components/PageHeader.tsx` renders the persistent header shown
+on every page. It reads `record.personal` from the store (via
+`usePatientStore` selector) and renders:
+- Avatar circle showing the patient's initials (falls back to "PA")
+- Patient full name and formatted date of birth
+- "Save changes" button (UI only — wiring deferred)
+- Profile completeness progress bar (percentage of PersonalDetails fields filled)
+- Horizontal nav tab bar with `NavLink` entries for all 7 routes
+
+The nav tabs live in `PageHeader`, not in `App.tsx`. `App.tsx` renders
+`PageHeader` above the `<Routes>` block and contains no nav logic of
+its own.
 
 ---
 
@@ -143,6 +179,8 @@ sections (personal, emergencyContact, insurance) and
 `add* / update* / remove*` triples for list sections (allergies,
 medications, vaccinations, procedures). All actions call
 `storage.saveRecord()` internally after mutating state.
+`clearInsuranceSecondary` sets `insuranceSecondary` back to `null`
+and saves — used by `InsuranceSecondaryForm`'s remove button.
 
 The store is initialized from localStorage via `storage.loadRecord()`
 at startup. Zustand's `persist` middleware is intentionally not used —
@@ -294,7 +332,11 @@ Uses the same in-memory localStorage mock as store.test.ts.
 Component tests (`.test.tsx`) require a browser-like environment.
 Configuration lives in two places:
 
-**`vite.config.ts` test block:**
+**`vite.config.ts`:**
+`defineConfig` is imported from `vitest/config` (not `vite`) so that
+the `test` block is fully typed. The Tailwind and React plugins are
+registered alongside the test config in the same file.
+
 ```ts
 test: {
   globals: true,
@@ -327,7 +369,25 @@ directory own their own store subscriptions — they read from
 Pages compose these components rather than containing form logic
 themselves.
 
-Styling is done with Tailwind CSS utility classes throughout.
+Styling uses a combination of Tailwind utility classes and the shared
+`hie-*` component classes defined in `src/index.css`.
+
+Non-React utilities in this directory:
+- `formatPhone.ts` — pure function, no React. Formats a string as a
+  US phone number `(XXX) XXX-XXXX` as the user types. Used by
+  `PersonalDetailsForm` and `EmergencyContactForm`.
+
+### src/components/StateCombobox.tsx
+Custom searchable combobox for selecting a US state. Renders a plain
+text input that filters the 50-state list (+ DC) as the user types.
+The dropdown is rendered with `position: fixed` (using a measured
+bounding rect) so it escapes any overflow-hidden ancestor.
+
+Props: `id: string`, `value: string`, `onChange: (value: string) => void`.
+
+On blur, if the typed text is not a valid state name, the input
+reverts to the last committed value. Used by `PersonalDetailsForm`
+for the state field.
 
 **Accessibility and testability rules for all components:**
 - Every `<label>` must have an `htmlFor` attribute matching the `id`
@@ -341,17 +401,23 @@ Styling is done with Tailwind CSS utility classes throughout.
 ### src/components/PersonalDetailsForm.tsx
 Controlled form for all 16 fields in `PersonalDetails`. Reads
 `record.personal` from the store via selector and calls
-`updatePersonal` on every input change — no submit button, changes
-persist automatically through the store on each keystroke.
+`updatePersonal` on every input change — no submit button.
 
-Handles the `number | null` fields (`heightFt`, `heightIn`,
-`weightLbs`) by converting empty string ↔ null at the input boundary
-so the store always receives the correct type.
+Notable implementation details:
+- **Imperial/metric toggle** — a two-button toggle switches between
+  imperial (ft/in, lbs) and metric (cm, kg) display. Local state
+  stores the text while typing; `updatePersonal` is called on
+  `onBlur`, converting back to the store's canonical imperial fields
+  (`heightFt`, `heightIn`, `weightLbs`).
+- **StateCombobox** — the state field uses `StateCombobox` (a custom
+  searchable dropdown) rather than a plain select or input.
+- **Phone auto-formatting** — the phone field applies `formatPhone`
+  from `./formatPhone.ts` on every keystroke, producing `(XXX) XXX-XXXX`.
+- **Dropdowns** for Gender, Marital Status, and Blood Type.
 
 Input ids: `firstName`, `lastName`, `dateOfBirth`, `gender`,
-`address`, `city`, `state`, `zip`, `phone`, `email`, `heightFt`,
-`heightIn`, `weightLbs`, `primaryLanguage`, `maritalStatus`,
-`bloodType`.
+`address`, `city`, `state` (StateCombobox), `zip`, `phone`, `email`,
+`height`, `weight`, `primaryLanguage`, `maritalStatus`, `bloodType`.
 
 Store actions used: `updatePersonal`.
 
@@ -371,17 +437,58 @@ Store actions used: `updateEmergencyContact`.
 
 ### src/components/AllergyList.tsx
 Inline-editable list of `Allergy` items. Renders each allergy as a
-3-column row (substance, reaction, severity + delete). All fields
-are editable in place — changes call `updateAllergy(id, { field })`
-immediately, no save button.
+color-coded pill tag. All fields are editable in place — changes call
+`updateAllergy(id, { field })` immediately, no save button.
 
+- Each pill shows a colored dot, an editable substance name input,
+  a severity `<select>`, and a delete (×) button on the top row,
+  plus an editable reaction input on a second row below.
+- Severity colors: mild (yellow), moderate (orange), severe (red).
 - **Add** button calls `newAllergy()` from schema.ts and passes the
   result to `addAllergy` — no intermediate state needed.
-- **Delete** button calls `removeAllergy(id)` for that row only.
-- **Severity** is a `<select>` with options: mild, moderate, severe.
+- **Delete** button calls `removeAllergy(id)` for that pill only.
 - Shows "No allergies recorded." when the list is empty.
+- A count badge ("N on file") is displayed in the section header.
 
 Store actions used: `addAllergy`, `updateAllergy`, `removeAllergy`.
+
+### src/components/InsurancePrimaryForm.tsx
+Controlled form for all six fields in `Insurance`. Reads
+`record.insurancePrimary` from the store via selector and calls
+`updateInsurancePrimary` on every input change — no submit button.
+If `insurancePrimary` is `null`, the component derives empty strings
+locally for controlled inputs; the store creates the object on the
+first `updateInsurancePrimary` call.
+
+Input ids (prefix `primary`): `primaryCarrier`, `primaryPlanName`,
+`primaryMemberId`, `primaryGroupNumber`, `primaryPolicyHolderName`,
+`primaryEffectiveDate`.
+
+Layout: 2-column grid. Row 1: Carrier | Plan Name. Row 2: Member ID |
+Group Number. Row 3: Policy Holder Name (full width). Row 4:
+Effective Date (full width). Shows an "On file" green badge in the
+section header when `carrier` is non-empty.
+
+Store actions used: `updateInsurancePrimary`.
+
+### src/components/InsuranceSecondaryForm.tsx
+Opt-in form for secondary insurance. When `insuranceSecondary` is
+`null` and the user has not opted in, renders a collapsed state
+showing only the section header and an "+ Add secondary insurance"
+button. When expanded, renders the same 6-field grid as
+`InsurancePrimaryForm` with `secondary`-prefixed ids, plus a "Remove"
+button in the section header.
+
+Clicking "Remove" calls `clearInsuranceSecondary` (sets the store
+field back to `null`) and collapses the form. The form auto-expands
+on mount if `insuranceSecondary` is already non-null (i.e. data was
+previously saved).
+
+Input ids (prefix `secondary`): `secondaryCarrier`, `secondaryPlanName`,
+`secondaryMemberId`, `secondaryGroupNumber`, `secondaryPolicyHolderName`,
+`secondaryEffectiveDate`.
+
+Store actions used: `updateInsuranceSecondary`, `clearInsuranceSecondary`.
 
 ### src/components/ProfilePage.test.tsx
 Component tests for `PersonalDetailsForm`, `EmergencyContactForm`,
@@ -404,17 +511,36 @@ for test isolation. Queries use `getByLabelText` (relies on
 Requires `jsdom` environment and `@testing-library/react` — see test
 setup section below.
 
+### src/components/InsurancePage.test.tsx
+Component tests for `InsurancePrimaryForm` and `InsuranceSecondaryForm`,
+plus a smoke test that renders `InsurancePage` and confirms both section
+headings are present.
+
+Test coverage:
+- **InsurancePage** — both "Primary Insurance" and "Secondary Insurance"
+  headings render.
+- **InsurancePrimaryForm** — all 6 fields render; typing in `carrier`
+  and `memberId` each call `updateInsurancePrimary` with the correct value.
+- **InsuranceSecondaryForm** — section renders when `insuranceSecondary`
+  is `null`; "Add secondary insurance" button is present in collapsed
+  state; typing after opting in creates the store object with the correct
+  value; "Remove" button is visible when the form is expanded; clicking
+  "Remove" sets `insuranceSecondary` to `null` and collapses back to the
+  add button.
+
 ### src/pages/ProfilePage.tsx
 Composes `PersonalDetailsForm`, `EmergencyContactForm`, and
 `AllergyList`. Thin wrapper with no business logic or store access —
 serves as the pattern for all other pages.
 
 ### src/App.tsx
-The application shell. Contains `BrowserRouter`, the `<nav>` with
-`NavLink` entries, and the `<Routes>` / `<Route>` declarations.
+The application shell. Contains `BrowserRouter`, renders `<PageHeader />`
+above the content area, and declares the `<Routes>` / `<Route>` entries.
 **No business logic, no store access, no data fetching here.**
 If you find yourself importing `usePatientStore` in App.tsx, move
 that logic into the relevant page or component instead.
+
+The navigation tabs are part of `PageHeader`, not `App.tsx`.
 
 Router: react-router-dom v7 (`BrowserRouter`).
 
@@ -432,7 +558,7 @@ Route map:
 | `MedicationsPage.tsx` | `/medications` | Medication list + add/edit/remove |
 | `VaccinationsPage.tsx` | `/vaccinations` | Vaccination list + add/edit/remove |
 | `ProceduresPage.tsx` | `/procedures` | Procedure list + add/edit/remove |
-| `InsurancePage.tsx` | `/insurance` | Primary + secondary insurance |
+| `InsurancePage.tsx` | `/insurance` | Primary insurance form + opt-in secondary insurance form |
 | `SharePage.tsx` | `/share` | Share tokens + access log |
 
 ### src/pages/pages.test.ts
