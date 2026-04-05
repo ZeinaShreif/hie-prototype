@@ -162,6 +162,7 @@ describe('share tokens', () => {
       expiresAt: null,
       label: 'Inova Primary Care',
       active: true,
+      sections: [],
     };
     usePatientStore.getState().addShareToken(token);
     expect(usePatientStore.getState().record.shareTokens['abc-123'].active)
@@ -175,6 +176,7 @@ describe('share tokens', () => {
       expiresAt: null,
       label: 'Inova Primary Care',
       active: true,
+      sections: [],
     };
     usePatientStore.getState().addShareToken(token);
     usePatientStore.getState().revokeShareToken('abc-123');

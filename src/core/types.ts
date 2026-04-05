@@ -42,6 +42,11 @@ export interface Medication {
   endDate: string | null;     // null = currently active
   source: 'provider' | 'self-reported';
   status: 'active' | 'past' | 'prn';
+  notes: string;              // instructions / provider notes
+  patientNotes: string;       // patient's own observations / side effects
+  reminder: boolean;          // dose reminder enabled
+  reminderTimes: string[];    // HH:MM times, one per daily dose
+  reminderDays: string[];     // day indices ('0'–'6'), for weekly schedules
 }
 
 export interface Vaccination {
@@ -61,6 +66,10 @@ export interface Procedure {
   provider: string;
   notes: string;
   category: 'surgery' | 'screening' | 'diagnostic' | 'other';
+  outcome: string;              // e.g. "Successful", "" = not recorded
+  followUpDate: string | null;  // ISO 8601 or null
+  cptCode: string;              // e.g. "44950", "" = none
+  diagnosisCode: string;        // e.g. "K37" (ICD-10), "" = none
 }
 
 export interface Insurance {
@@ -92,12 +101,17 @@ export interface PatientRecord {
   shareTokens: Record<string, ShareToken>;
 }
 
+export type ShareableSection =
+  'personal' | 'emergency' | 'allergies' | 'medications' |
+  'vaccinations' | 'procedures' | 'insurancePrimary' | 'insuranceSecondary';
+
 export interface ShareToken {
   token: string;
   createdAt: string;
   expiresAt: string | null;   // null = no expiry in prototype
   label: string;              // "Inova Primary Care", "Dr. Rashid"
   active: boolean;
+  sections: ShareableSection[];
 }
 
 export interface AccessLogEntry {

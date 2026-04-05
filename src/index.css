@@ -1,35 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Sora:wght@400;600;700&display=swap');
 @import "tailwindcss";
 
 /* ── Design tokens ──────────────────────────────────────────────────────────
+   HealthPass brand palette (healthpass-brand.js).
    Registering colours in @theme makes them available as Tailwind utilities:
-   bg-navy, text-cyan, bg-ice, border-ice-border, etc.
+   bg-cobalt-900, text-cobalt-600, bg-ice-50, border-ice-200, etc.
    Tailwind v4 also exposes them as CSS custom properties (--color-*) under :root.
+
+   Naming follows Tailwind convention: {color}-{numeric-shade}
+   Semantic aliases (--navy, --cyan, etc.) are kept in :root for inline styles.
 ────────────────────────────────────────────────────────────────────────── */
 @theme {
-  --color-navy:        #03045E;
-  --color-cyan:        #0096C7;
-  --color-cyan-bright: #00B4D8;
-  --color-cyan-light:  #90E0EF;
-  --color-ice:         #EFF8FB;
-  --color-ice-border:  #CAE9F5;
-  --color-ice-divider: #EAF5FB;
-  --color-label:       #90B8CC;
-  --color-text-dark:   #03045E;
-  --color-muted:       #4A6FA5;
+  /* Cobalt scale — primary brand */
+  --color-cobalt-900: #1A2E72;   /* logo navy — header bg, primary text */
+  --color-cobalt-800: #152460;   /* deep navy — progress track, nav divider */
+  --color-cobalt-700: #233A8A;   /* mid-dark cobalt */
+  --color-cobalt-600: #0DB5C5;   /* text-safe teal — links, labels on white */
+  --color-cobalt-500: #11E0F4;   /* logo aqua — button bg, progress fill, fills */
+  --color-cobalt-400: #6AECF6;   /* aqua-light — active nav label */
+  --color-cobalt-300: #6B80B8;   /* muted — field labels */
+  --color-cobalt-200: #8FA0C8;   /* secondary text */
+
+  /* Ice scale — surface / page background */
+  --color-ice-50:  #F4F7FF;   /* surface */
+  --color-ice-100: #E8EEFA;   /* lighter cobalt tint — dividers */
+  --color-ice-200: #D0DCF7;   /* light cobalt tint — borders */
+
+  /* Gold scale — verification only */
+  --color-gold-600: #D4A017;
+  --color-gold-400: #F0BA2A;
+
+  /* Mint scale — confirmed states */
+  --color-mint-500: #10B981;
+  --color-mint-100: #D1FAE5;
 }
 
 /* Short-name aliases so inline styles can still use var(--navy) etc. */
 :root {
-  --navy:        var(--color-navy);
-  --cyan:        var(--color-cyan);
-  --cyan-bright: var(--color-cyan-bright);
-  --cyan-light:  var(--color-cyan-light);
-  --ice:         var(--color-ice);
-  --ice-border:  var(--color-ice-border);
-  --ice-divider: var(--color-ice-divider);
-  --label-color: var(--color-label);
-  --text-dark:   var(--color-text-dark);
-  --muted:       var(--color-muted);
+  --navy:           var(--color-cobalt-900);
+  --cyan:           var(--color-cobalt-600);
+  --cyan-bright:    var(--color-cobalt-500);
+  --cyan-light:     var(--color-cobalt-400);
+  --ice:            var(--color-ice-50);
+  --ice-border:     var(--color-ice-200);
+  --ice-divider:    var(--color-ice-100);
+  --label-color:    var(--color-cobalt-300);
+  --text-dark:      var(--color-cobalt-900);
+  --muted:          var(--color-cobalt-200);
+  --gold:           var(--color-gold-600);
+  --gold-light:     var(--color-gold-400);
+  --emerald:        var(--color-mint-500);
+  --emerald-light:  var(--color-mint-100);
+}
+
+body {
+  font-family: 'Sora', system-ui, sans-serif;
+}
+
+/* ── Print styles ───────────────────────────────────────────────────────────
+   .no-print  — visible on screen, hidden when printing (nav, buttons, etc.)
+   .print-only — hidden on screen, visible when printing (PrintSummary)
+────────────────────────────────────────────────────────────────────────── */
+.print-only { display: none; }
+
+@page { margin: 0; }
+
+@media print {
+  .no-print   { display: none !important; }
+  .print-only { display: block !important; }
+  body { background: white; }
 }
 
 /* ── Shared component classes ───────────────────────────────────────────────
@@ -40,7 +79,8 @@
 
   /* Field label: small, uppercased, muted */
   .hie-label {
-    @apply block uppercase font-bold tracking-[0.7px] text-[10px] mb-1;
+    @apply block uppercase font-bold text-[10.5px] mb-1;
+    letter-spacing: 0.12em;
     color: var(--label-color);
   }
 
@@ -58,7 +98,7 @@
   .hie-input:focus {
     color: var(--cyan);
     border-color: var(--cyan);
-    box-shadow: 0 0 0 3px rgba(0, 150, 199, 0.15);
+    box-shadow: 0 0 0 3px rgba(17, 224, 244, 0.2); /* aqua at 20% */
   }
 
   /* Grid cell — right column or full-width */
@@ -93,8 +133,9 @@
 
   /* Section heading text */
   .hie-section-title {
-    @apply uppercase font-extrabold tracking-[0.9px] m-0;
+    @apply uppercase font-extrabold m-0;
     font-size: 11px;
+    letter-spacing: 0.12em;
     color: var(--text-dark);
   }
 

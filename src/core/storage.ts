@@ -18,8 +18,8 @@ export const storage = {
   },
 
   saveRecord(record: PatientRecord): void {
-    record.updatedAt = new Date().toISOString();
-    localStorage.setItem(RECORD_KEY, JSON.stringify(record));
+    const toSave = { ...record, updatedAt: new Date().toISOString() };
+    localStorage.setItem(RECORD_KEY, JSON.stringify(toSave));
   },
 
   clearRecord(): void {
@@ -39,5 +39,9 @@ export const storage = {
     const log = storage.loadLog();
     log.unshift(entry); // newest first
     localStorage.setItem(LOG_KEY, JSON.stringify(log));
+  },
+
+  clearLog(): void {
+    localStorage.removeItem(LOG_KEY);
   },
 };

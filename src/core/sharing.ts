@@ -2,7 +2,28 @@
 // No React imports. No browser APIs (no window.*, no localStorage).
 // All side effects (saving tokens, appending log entries) happen in the store.
 
-import type { ShareToken, PatientRecord } from './types';
+import type { ShareToken, PatientRecord, ShareableSection } from './types';
+import { newShareToken } from './schema';
+
+/** All sections that can be included in a share token. */
+export const ALL_SECTIONS: ShareableSection[] = [
+  'personal', 'emergency', 'allergies', 'medications',
+  'vaccinations', 'procedures', 'insurancePrimary', 'insuranceSecondary',
+];
+
+/**
+ * Creates a ShareToken with the given label, sections, and optional expiry.
+ * Wraps newShareToken from schema.ts with a richer signature.
+ * expiresAt defaults to null (no expiry) when omitted.
+ */
+export function createShareToken(
+  label: string,
+  sections: ShareableSection[],
+  expiresAt?: string | null,
+): ShareToken {
+  const base = newShareToken(label, sections);
+  return expiresAt !== undefined ? { ...base, expiresAt } : base;
+}
 
 /** Returns true if the token is active and not past its expiry. */
 export function isTokenActive(token: ShareToken): boolean {

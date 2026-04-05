@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isTokenActive, shareUrl, getActiveTokens, getRevokedTokens, buildClipboardText } from './sharing';
+import { isTokenActive, shareUrl, getActiveTokens, getRevokedTokens, buildClipboardText, createShareToken, ALL_SECTIONS } from './sharing';
 import type { ShareToken } from './types';
 import { createEmptyPatientRecord } from './schema';
 
@@ -14,6 +14,7 @@ function makeToken(overrides: Partial<ShareToken> = {}): ShareToken {
     expiresAt: null,
     label: 'Test Clinic',
     active: true,
+    sections: [],
     ...overrides,
   };
 }
@@ -156,10 +157,12 @@ describe('buildClipboardText', () => {
     record.medications = [
       { id: '1', name: 'Lisinopril', dosage: '10mg', frequency: 'daily',
         prescribingProvider: 'Dr. Patel', startDate: '2024-01-01', endDate: null,
-        source: 'provider', status: 'active' },
+        source: 'provider', status: 'active',
+        notes: '', patientNotes: '', reminder: false, reminderTimes: [], reminderDays: [] },
       { id: '2', name: 'OldMed', dosage: '5mg', frequency: 'weekly',
         prescribingProvider: '', startDate: '2020-01-01', endDate: '2021-01-01',
-        source: 'self-reported', status: 'past' },
+        source: 'self-reported', status: 'past',
+        notes: '', patientNotes: '', reminder: false, reminderTimes: [], reminderDays: [] },
     ];
     const text = buildClipboardText(record);
     expect(text).toContain('Lisinopril');
@@ -216,5 +219,70 @@ describe('buildClipboardText', () => {
 
   it('includes the PATIENT HEALTH SUMMARY header', () => {
     expect(buildClipboardText(createEmptyPatientRecord())).toContain('PATIENT HEALTH SUMMARY');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ALL_SECTIONS
+// ---------------------------------------------------------------------------
+
+describe('ALL_SECTIONS', () => {
+  it('contains all eight shareable sections', () => {
+    expect(ALL_SECTIONS).toHaveLength(8);
+  });
+
+  it('includes every expected section key', () => {
+    const expected = [
+      'personal', 'emergency', 'allergies', 'medications',
+      'vaccinations', 'procedures', 'insurancePrimary', 'insuranceSecondary',
+    ];
+    expect(ALL_SECTIONS).toEqual(expected);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// createShareToken
+// ---------------------------------------------------------------------------
+
+describe('createShareToken', () => {
+  it('creates a token with the supplied label and sections', () => {
+    const t = createShareToken('Dr. Rashid', ['personal', 'allergies']);
+    expect(t.label).toBe('Dr. Rashid');
+    expect(t.sections).toEqual(['personal', 'allergies']);
+  });
+
+  it('generates a uuid token string', () => {
+    const t = createShareToken('Clinic', ALL_SECTIONS);
+    expect(t.token).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    );
+  });
+
+  it('two calls produce different token values', () => {
+    expect(createShareToken('A', []).token).not.toBe(createShareToken('A', []).token);
+  });
+
+  it('defaults expiresAt to null when omitted', () => {
+    expect(createShareToken('X', []).expiresAt).toBeNull();
+  });
+
+  it('stores the supplied expiresAt when provided', () => {
+    const exp = '2027-01-01T00:00:00.000Z';
+    expect(createShareToken('X', [], exp).expiresAt).toBe(exp);
+  });
+
+  it('stores null expiresAt when explicitly passed null', () => {
+    expect(createShareToken('X', [], null).expiresAt).toBeNull();
+  });
+
+  it('starts active', () => {
+    expect(createShareToken('X', ALL_SECTIONS).active).toBe(true);
+  });
+
+  it('works with ALL_SECTIONS — token carries all eight sections', () => {
+    const t = createShareToken('Full share', ALL_SECTIONS);
+    expect(t.sections).toHaveLength(8);
+    expect(t.sections).toContain('medications');
+    expect(t.sections).toContain('insuranceSecondary');
   });
 });

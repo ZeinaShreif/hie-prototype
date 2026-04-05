@@ -20,12 +20,10 @@ A patient-controlled health information exchange prototype. Patients fill in the
 | Layer | Name | Status |
 |-------|------|--------|
 | 0 | Data model | ✅ Complete |
-| 1 | Patient UI | 🔶 In progress |
-| 2 | Sharing | 🔶 In progress |
-| 3 | Consent & audit log | 🔶 In progress |
+| 1 | Patient UI | ✅ Complete |
+| 2 | Sharing | ✅ Complete |
+| 3 | Consent & audit log | ✅ Complete |
 | 4 | Production / HIPAA | ⬜ Deferred |
-
-Layer 1 progress: store ✅ · routing ✅ · integration tests ✅ · ProfilePage ✅ · InsurancePage ✅ · remaining pages (Medications, Vaccinations, Procedures, Overview) 🔶
 
 ---
 
@@ -74,6 +72,6 @@ src/
   main.tsx       React entry point
 ```
 
-Core logic for Layers 2 and 3 (`sharing.ts`, `accessLog.ts`) lives in `src/core/`. UI for those layers is not yet built.
+Layers 2 and 3 core logic (`sharing.ts`, `accessLog.ts`) and UI (`SharePage.tsx`, `PrintSummary.tsx`) are complete. Layer 4 (auth, encryption, HIPAA, FHIR API) is deferred.
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full annotated file reference and [FrontEnd_Instructions.md](./FrontEnd_Instructions.md) for component patterns, styling guide, and build order.

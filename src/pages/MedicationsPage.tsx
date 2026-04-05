@@ -1,3 +1,9 @@
+import MedicationList from '../components/MedicationList';
+
 export default function MedicationsPage() {
-  return <h1>Medications</h1>;
+  return (
+    <div className="p-4">
+      <MedicationList />
+    </div>
+  );
 }

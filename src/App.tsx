@@ -13,7 +13,7 @@ export default function App() {
     <BrowserRouter>
       <div className="min-h-screen bg-white">
         <div
-          className="mx-auto bg-ice overflow-hidden"
+          className="mx-auto bg-ice-50 overflow-hidden"
           style={{ maxWidth: 480, borderRadius: 20, border: '1.5px solid var(--ice-border)', minHeight: '100vh' }}
         >
           <PageHeader />

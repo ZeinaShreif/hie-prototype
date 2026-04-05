@@ -1,6 +1,6 @@
 # HIE Prototype — Frontend Developer Guide
 
-**Last updated: 2026-03-25**
+**Last updated: 2026-03-31**
 
 ---
 
@@ -18,22 +18,22 @@ eliminating the need to re-fill the same intake forms every visit.
 | Layer | Name | Status | Notes |
 |-------|------|--------|-------|
 | 0 | Data model | ✅ COMPLETE | Do not modify — see locked files below |
-| 1 | Patient UI | 🔶 IN PROGRESS | Store + routing + ProfilePage done |
-| 2 | Sharing | 🔶 IN PROGRESS | Core logic (sharing.ts) complete and tested — UI not yet built |
-| 3 | Consent & audit log | 🔶 IN PROGRESS | Core logic (accessLog.ts) complete and tested — UI not yet built |
+| 1 | Patient UI | ✅ COMPLETE | All pages, components, and tests done |
+| 2 | Sharing | ✅ COMPLETE | sharing.ts + SharePage.tsx + PrintSummary.tsx |
+| 3 | Consent & audit log | ✅ COMPLETE | accessLog.ts + access log UI in SharePage |
 | 4 | Production / HIPAA | ⬜ DEFERRED | Auth, encryption, FHIR API |
 
 ### Layer 1 detailed status
 
-| Page | Route | Status | Components needed |
-|------|-------|--------|-------------------|
+| Page | Route | Status | Components |
+|------|-------|--------|------------|
 | ProfilePage | `/profile` | ✅ Complete | PersonalDetailsForm ✅, EmergencyContactForm ✅, AllergyList ✅ |
-| MedicationsPage | `/medications` | 🔶 Placeholder | MedicationList ⬜ |
-| VaccinationsPage | `/vaccinations` | 🔶 Placeholder | VaccinationList ⬜ |
-| ProceduresPage | `/procedures` | 🔶 Placeholder | ProcedureList ⬜ |
+| MedicationsPage | `/medications` | ✅ Complete | MedicationList ✅ |
+| VaccinationsPage | `/vaccinations` | ✅ Complete | VaccinationList ✅ |
+| ProceduresPage | `/procedures` | ✅ Complete | ProcedureList ✅ |
 | InsurancePage | `/insurance` | ✅ Complete | InsurancePrimaryForm ✅, InsuranceSecondaryForm ✅ |
-| OverviewPage | `/` | 🔶 Placeholder | Summary cards ⬜ (build last) |
-| SharePage | `/share` | ⬜ Deferred | Layer 2 — do not build yet |
+| OverviewPage | `/` | ✅ Complete | Identity banner + 4 SummaryCards ✅ |
+| SharePage | `/share` | ✅ Complete | Section picker, QR, clipboard/print/link, access log ✅ |
 
 ---
 
@@ -66,50 +66,64 @@ src/
 │   ├── schema.test.ts      ❌ Tests for schema + storage
 │   ├── store.test.ts       ❌ Tests for store actions
 │   ├── integration.test.ts ❌ Cross-layer tests (store → storage → reload)
-│   ├── sharing.ts          ❌ Layer 2 — sharing business logic (isTokenActive, shareUrl, getActiveTokens, getRevokedTokens, buildClipboardText)
+│   ├── sharing.ts          ❌ Layer 2 — sharing logic (ALL_SECTIONS, createShareToken,
+│   │                                   isTokenActive, shareUrl, getActiveTokens,
+│   │                                   getRevokedTokens, buildClipboardText)
 │   ├── sharing.test.ts     ❌ Tests for sharing.ts
-│   ├── accessLog.ts        ❌ Layer 3 — access log business logic (createLogEntry, filterByMethod, filterByDateRange, getActiveEntries, getRevokedEntries, revokeEntry, summariseLog)
+│   ├── accessLog.ts        ❌ Layer 3 — access log logic (createLogEntry, filterByMethod,
+│   │                                   filterByDateRange, getActiveEntries, getRevokedEntries,
+│   │                                   revokeEntry, summariseLog)
 │   └── accessLog.test.ts   ❌ Tests for accessLog.ts
 │
-├── components/             ✅ YOUR MAIN WORK AREA
-│   ├── PageHeader.tsx            ✅ Complete — navy header, avatar, progress bar, nav tabs
-│   ├── PersonalDetailsForm.tsx   ✅ Complete — use as form pattern
-│   ├── EmergencyContactForm.tsx  ✅ Complete
-│   ├── AllergyList.tsx           ✅ Complete — use as list pattern
-│   ├── StateCombobox.tsx         ✅ Complete — searchable US state dropdown
-│   ├── formatPhone.ts            ✅ Complete — phone auto-formatting utility
-│   ├── ProfilePage.test.tsx      ✅ Complete — add new test blocks here
-│   └── [MedicationList.tsx]      ⬜ You build this next
-│   └── [VaccinationList.tsx]     ⬜ You build this
-│   └── [ProcedureList.tsx]       ⬜ You build this
-│   ├── InsurancePrimaryForm.tsx  ✅ Complete — 6-field form, id prefix "primary"
-│   └── InsuranceSecondaryForm.tsx ✅ Complete — opt-in with add/remove, id prefix "secondary"
+├── components/             ✅ ALL COMPLETE
+│   ├── PageHeader.tsx            ✅ Navy header, avatar, progress bar, nav tabs;
+│   │                                optional onSave prop, 2-second success state
+│   ├── PersonalDetailsForm.tsx   ✅ Use as form pattern
+│   ├── EmergencyContactForm.tsx  ✅
+│   ├── AllergyList.tsx           ✅ Use as list pattern
+│   ├── StateCombobox.tsx         ✅ Searchable US state dropdown
+│   ├── formatPhone.ts            ✅ Phone auto-formatting utility
+│   ├── InsurancePrimaryForm.tsx  ✅ 6-field form, id prefix "primary"
+│   ├── InsuranceSecondaryForm.tsx ✅ Opt-in with add/remove, id prefix "secondary"
+│   ├── MedicationList.tsx        ✅ 8-field inline-editable list
+│   ├── VaccinationList.tsx       ✅ 5-field inline-editable list
+│   ├── ProcedureList.tsx         ✅ 10-field list with search, category filter, sort
+│   ├── PrintSummary.tsx          ✅ Print-only summary, hidden on screen,
+│   │                                filtered by sections prop
+│   ├── ProfilePage.test.tsx      ✅
+│   ├── InsurancePage.test.tsx    ✅
+│   ├── MedicationsPage.test.tsx  ✅
+│   ├── VaccinationsPage.test.tsx ✅
+│   ├── ProceduresPage.test.tsx   ✅
+│   └── OverviewPage.test.tsx     ✅
 │
-├── pages/                  ✅ WIRE COMPONENTS IN HERE
-│   ├── ProfilePage.tsx     ✅ Complete — use as page pattern
-│   ├── MedicationsPage.tsx 🔶 Placeholder — needs MedicationList
-│   ├── VaccinationsPage.tsx 🔶 Placeholder — needs VaccinationList
-│   ├── ProceduresPage.tsx  🔶 Placeholder — needs ProcedureList
-│   ├── InsurancePage.tsx   ✅ Complete
-│   ├── OverviewPage.tsx    🔶 Placeholder — build last
-│   ├── SharePage.tsx       ⬜ Deferred — do not build yet
-│   └── pages.test.ts       ✅ Smoke tests — update if you add a page
+├── pages/                  ✅ ALL COMPLETE
+│   ├── ProfilePage.tsx     ✅ Use as page pattern
+│   ├── MedicationsPage.tsx ✅
+│   ├── VaccinationsPage.tsx ✅
+│   ├── ProceduresPage.tsx  ✅
+│   ├── InsurancePage.tsx   ✅
+│   ├── OverviewPage.tsx    ✅ Identity banner + 4 SummaryCards
+│   ├── SharePage.tsx       ✅ Section picker, QR, sharing methods, access log
+│   ├── SharePage.test.tsx  ✅
+│   └── pages.test.ts       ✅ Smoke tests
 │
 ├── App.tsx                 ⚠️  ROUTING ONLY — renders PageHeader + Routes, no logic
 ├── main.tsx                ❌ DO NOT MODIFY
-├── index.css               ⚠️  Tailwind entry + design tokens + hie-* classes — do not add ad-hoc CSS
+├── index.css               ⚠️  Tailwind entry + design tokens + hie-* classes +
+│                               print styles (.no-print, .print-only, @page)
 └── test-setup.ts           ⚠️  Test bootstrap — do not modify
 ```
 
 ---
 
-## Recommended build order
+## Build order (all steps complete)
 
-Work through these in sequence. Each step follows the same pattern as
-the completed examples.
+All steps below are complete. This section is kept for reference —
+it documents the pattern used and why each step was ordered this way.
 
-### Step 1 — MedicationList.tsx (closest to AllergyList)
-Create `src/components/MedicationList.tsx`, then update
+### Step 1 — MedicationList.tsx ✅
+Created `src/components/MedicationList.tsx`, updated
 `src/pages/MedicationsPage.tsx` to render it.
 
 Fields to display per row (from `Medication` in types.ts):
@@ -125,8 +139,8 @@ Fields to display per row (from `Medication` in types.ts):
 Store actions to use: `addMedication`, `updateMedication`, `removeMedication`
 Factory to call on Add: `newMedication()` from `src/core/schema.ts`
 
-### Step 2 — VaccinationList.tsx
-Create `src/components/VaccinationList.tsx`, update `VaccinationsPage.tsx`.
+### Step 2 — VaccinationList.tsx ✅
+Created `src/components/VaccinationList.tsx`, updated `VaccinationsPage.tsx`.
 
 Fields (from `Vaccination` in types.ts):
 - `vaccineName` — text input
@@ -138,8 +152,8 @@ Fields (from `Vaccination` in types.ts):
 Store actions: `addVaccination`, `updateVaccination`, `removeVaccination`
 Factory: `newVaccination()`
 
-### Step 3 — ProcedureList.tsx
-Create `src/components/ProcedureList.tsx`, update `ProceduresPage.tsx`.
+### Step 3 — ProcedureList.tsx ✅
+Created `src/components/ProcedureList.tsx`, updated `ProceduresPage.tsx`.
 
 Fields (from `Procedure` in types.ts):
 - `procedureName` — text input
@@ -167,18 +181,16 @@ button when `insuranceSecondary` is `null`; a "Remove" button in the
 section header collapses and clears it. Auto-expands on mount if data
 was previously saved.
 
-### Step 5 — OverviewPage
-Build after all other sections are complete. Read-only summary — no
-store writes. Read all sections from the store and display counts
-and key values (e.g. "3 medications", "2 allergies", name, DOB).
+### Step 5 — OverviewPage ✅
+Read-only identity banner + 4 SummaryCards (Allergies, Medications,
+Vaccinations, Procedures). No store writes. Built last as planned.
 
-### Step 6 — SharePage (Layer 2 + 3 — do not start yet)
-Deferred until Layer 1 UI is fully complete and tested. The core
-logic is ready: `src/core/sharing.ts` (token validation, URL
-generation, clipboard text) and `src/core/accessLog.ts` (log
-filtering, revocation, summary) are both complete. The SharePage
-UI and its components will import from these modules when the time
-comes. Do not build this until all Layer 1 pages are done.
+### Step 6 — SharePage ✅ (Layer 2 + 3)
+Built using `src/core/sharing.ts` and `src/core/accessLog.ts`.
+Includes: section picker, QR hero card, clipboard/print/link sharing
+methods, collapsible access log with Clear log and per-entry Revoke
+(link/qr only). `PrintSummary.tsx` provides the print-only layout,
+filtered by the section picker's selection.
 
 ---
 
@@ -486,9 +498,10 @@ Available from `usePatientStore` in `src/core/store.ts`.
 | `updateInsurancePrimary` | `(data: Partial<Insurance>) => void` | InsurancePrimaryForm ✅ |
 | `updateInsuranceSecondary` | `(data: Partial<Insurance>) => void` | InsuranceSecondaryForm ✅ |
 | `clearInsuranceSecondary` | `() => void` | InsuranceSecondaryForm ✅ — sets secondary to null |
-| `addShareToken` | `(token: ShareToken) => void` | SharePage ⬜ (Layer 2) |
-| `revokeShareToken` | `(token: string) => void` | SharePage ⬜ (Layer 2) |
-| `appendLog` | `(entry: AccessLogEntry) => void` | SharePage ⬜ (Layer 3) |
+| `addShareToken` | `(token: ShareToken) => void` | SharePage ✅ |
+| `revokeShareToken` | `(token: string) => void` | SharePage ✅ |
+| `appendLog` | `(entry: AccessLogEntry) => void` | SharePage ✅ |
+| `clearLog` | `() => void` | SharePage ✅ — clears log in memory and localStorage |
 
 ---
 

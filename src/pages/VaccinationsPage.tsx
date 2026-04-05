@@ -1,3 +1,9 @@
+import VaccinationList from '../components/VaccinationList';
+
 export default function VaccinationsPage() {
-  return <h1>Vaccinations</h1>;
+  return (
+    <div className="p-4">
+      <VaccinationList />
+    </div>
+  );
 }

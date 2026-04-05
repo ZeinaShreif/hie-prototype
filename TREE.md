@@ -46,23 +46,27 @@ hie-prototype/
 │   │               add/update/remove{Allergy,Medication,Vaccination,Procedure},
 │   │               updateInsurancePrimary, updateInsuranceSecondary,
 │   │               clearInsuranceSecondary, addShareToken, revokeShareToken,
-│   │               appendLog, clearAll
+│   │               appendLog, clearLog, clearAll
 │   │
 │   ├── sharing.ts                  Share-token logic and clipboard text builder
-│   │   ├── imports: types.ts
-│   │   └── exports: isTokenActive, shareUrl, buildClipboardText …
+│   │   ├── imports: types.ts, schema.ts
+│   │   └── exports: ALL_SECTIONS, createShareToken, isTokenActive,
+│   │               shareUrl, getActiveTokens, getRevokedTokens, buildClipboardText
 │   │
 │   └── accessLog.ts                Consent / audit log entry management
 │       ├── imports: types.ts, schema.ts
-│       └── exports: appendAccessLog, getAccessLog …
+│       └── exports: createLogEntry, filterByMethod, filterByDateRange,
+│                   getActiveEntries, getRevokedEntries, revokeEntry, summariseLog
 │
 ├── components/                     Layer 1 — reusable UI pieces
 │   │
 │   ├── PageHeader.tsx              Navy header rendered on every page
 │   │   ├── imports: react-router-dom (NavLink), store
+│   │   ├── props: onSave?: () => void
 │   │   ├── reads store: personal
-│   │   └── renders: avatar · full name · DOB · save button
+│   │   └── renders: avatar · full name · DOB · save button (2s success state)
 │   │                progress bar · nav tabs (Overview / Profile / Meds …)
+│   │                className="no-print" — hidden when printing
 │   │
 │   ├── PersonalDetailsForm.tsx     All personal detail fields
 │   │   ├── imports: store, formatPhone, StateCombobox
@@ -112,7 +116,14 @@ hie-prototype/
 │   │                 auto-expands if data was previously saved,
 │   │                 id prefix "secondary" (secondaryCarrier, etc.)
 │   │
-│   └── InsurancePage.test.tsx      Component tests for insurance forms
+│   ├── InsurancePage.test.tsx      Component tests for insurance forms
+│   ├── MedicationsPage.test.tsx    Component tests for MedicationList (48 tests):
+│   │                               Today view, My List view, add/edit/delete,
+│   │                               collapse/expand, reminder toggle, past meds section,
+│   │                               multi-dose rows, mark-as-missed, missed doses log
+│   ├── VaccinationsPage.test.tsx   Component tests for VaccinationList
+│   ├── ProceduresPage.test.tsx     Component tests for ProcedureList
+│   └── OverviewPage.test.tsx       Component tests for OverviewPage (wrapped in MemoryRouter)
 │
 └── pages/                          Layer 1 — screen-level composers
     │                               (form logic stays in components, not here)
@@ -128,11 +139,25 @@ hie-prototype/
     │   │           <InsuranceSecondaryForm />
     │   └── no direct store access
     │
-    ├── SharePage.tsx               Share-token UI (uses sharing.ts via store) — deferred
-    ├── OverviewPage.tsx            (stub — build last)
-    ├── MedicationsPage.tsx         (stub)
-    ├── VaccinationsPage.tsx        (stub)
-    └── ProceduresPage.tsx          (stub)
+    ├── MedicationsPage.tsx         Renders <MedicationList /> (Today/My List views)
+    ├── VaccinationsPage.tsx        Renders <VaccinationList />
+    ├── ProceduresPage.tsx          Renders <ProcedureList />
+    │
+    ├── OverviewPage.tsx            Read-only summary page
+    │   ├── renders: identity banner (name, DOB, sex, blood type,
+    │   │           emergency contact, insurance carrier)
+    │   └── renders: 4 SummaryCards (Allergies, Medications,
+    │               Vaccinations, Procedures) with count + preview + Edit link
+    │
+    ├── SharePage.tsx               Layer 2 + 3 sharing UI
+    │   ├── imports: sharing.ts (createShareToken, ALL_SECTIONS,
+    │   │           shareUrl, buildClipboardText), accessLog.ts (createLogEntry)
+    │   ├── reads store: shareTokens, log
+    │   ├── renders: <PrintSummary sections={selectedSections} /> (outside no-print wrapper)
+    │   └── sections: section picker · QR hero · other sharing methods
+    │                 · collapsible access log (Clear log, Revoke for link/qr)
+    │
+    └── SharePage.test.tsx          25 component tests for SharePage
 ```
 
 ## Dependency flow
@@ -146,9 +171,9 @@ types.ts
    └── accessLog.ts ──────────► store.ts (usePatientStore)
                                            ↑
                               ┌────────────┼────────────┐
-                         PageHeader   components     (future pages)
+                         PageHeader   components      pages/
                                           ↑
-                                       pages/
+                                   PrintSummary ← SharePage
 ```
 
 ### Rules enforced by CLAUDE.md
@@ -158,6 +183,6 @@ types.ts
 | `core/` never imports React or browser APIs | keeps logic testable in pure Node |
 | `storage.ts` is the only localStorage accessor | swappable at Layer 4 (HIPAA) |
 | Components use `usePatientStore()` exclusively | never import storage.ts directly |
-| `App.tsx` contains routing only | no store access, no business logic |
+| `App.tsx` contains routing only | no store access, no business logic, no data fetching |
 | Every list item uses a `uuid` id field | never rely on array index |
 | All dates stored as ISO 8601 strings | no Date objects in the store |

@@ -64,6 +64,23 @@ describe('item factories', () => {
     expect(m.source).toBe('self-reported');
     expect(m.endDate).toBeNull();
   });
+
+  it('new medication has empty notes/patientNotes and reminder off', () => {
+    const m = newMedication();
+    expect(m.notes).toBe('');
+    expect(m.patientNotes).toBe('');
+    expect(m.reminder).toBe(false);
+    expect(m.reminderTimes).toEqual([]);
+    expect(m.reminderDays).toEqual([]);
+  });
+
+  it('new procedure defaults new fields correctly', () => {
+    const p = newProcedure();
+    expect(p.outcome).toBe('');
+    expect(p.followUpDate).toBeNull();
+    expect(p.cptCode).toBe('');
+    expect(p.diagnosisCode).toBe('');
+  });
 });
 
 describe('newShareToken', () => {
@@ -155,7 +172,9 @@ describe('storage adapter', () => {
     vi.useFakeTimers();
     vi.advanceTimersByTime(1000);
     storage.saveRecord(r);
-    expect(r.updatedAt).not.toBe(before);
+    // saveRecord does not mutate the argument — check the persisted value instead
+    const loaded = storage.loadRecord();
+    expect(loaded?.updatedAt).not.toBe(before);
     vi.useRealTimers();
   });
 

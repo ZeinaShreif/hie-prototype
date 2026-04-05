@@ -7,10 +7,10 @@ with providers at check-in. Solving the pain point of
 repeatedly filling out the same medical forms.
 
 ## Current build status
-- Layer 0 (data model): COMPLETE — do not modify core/ types without discussion
-- Layer 1 (patient UI): IN PROGRESS — store complete, routing complete, integration tests complete, ProfilePage ✅, InsurancePage ✅, remaining pages (Medications, Vaccinations, Procedures, Overview) 🔶
-- Layer 2 (sharing): IN PROGRESS — sharing.ts complete and tested
-- Layer 3 (consent/audit log): IN PROGRESS — accessLog.ts complete and tested
+- Layer 0 (data model): COMPLETE
+- Layer 1 (patient UI): COMPLETE — all pages and components built and tested
+- Layer 2 (sharing): COMPLETE — sharing.ts, SharePage.tsx, PrintSummary.tsx
+- Layer 3 (consent/audit log): COMPLETE — accessLog.ts, access log UI in SharePage
 - Layer 4 (production/HIPAA): NOT STARTED — deferred
 
 ## Tech stack
@@ -27,16 +27,30 @@ src/
                    except via storage.ts. Never modify types.ts without
                    updating schema.test.ts.
   components/   ← Layer 1 UI components
-                   PageHeader.tsx — navy header with avatar, progress bar, nav tabs
+                   PageHeader.tsx        — navy header, avatar, progress bar, nav tabs,
+                                           optional onSave prop, 2s success state, no-print
                    PersonalDetailsForm.tsx — imperial/metric toggle, StateCombobox, formatPhone
                    EmergencyContactForm.tsx
-                   AllergyList.tsx — pill-tag list, inline editable
-                   StateCombobox.tsx — searchable US state dropdown
-                   formatPhone.ts — phone auto-formatting utility
-                   InsurancePrimaryForm.tsx — 6-field form, id prefix "primary"
+                   AllergyList.tsx       — pill-tag list, inline editable
+                   StateCombobox.tsx     — searchable US state dropdown
+                   formatPhone.ts        — phone auto-formatting utility
+                   InsurancePrimaryForm.tsx  — 6-field form, id prefix "primary"
                    InsuranceSecondaryForm.tsx — opt-in form with add/remove toggle, id prefix "secondary"
-  pages/        ← Layer 1 screen-level components
-                   ProfilePage.tsx ✅ · InsurancePage.tsx ✅ · remaining pages 🔶 placeholder only
+                   MedicationList.tsx    — Today/My List toggle; Today: adherence card, dose
+                                           tracking (taken/due/missed), one row per reminderTimes
+                                           slot (multi-dose support), upcoming doses suppressed
+                                           until their scheduled time, mark-taken/mark-missed
+                                           actions, collapsible missed doses log (session-only);
+                                           My List: collapsible items, 10 fields (+ notes,
+                                           patientNotes), reminder toggle with time pickers,
+                                           past meds section, expired end-date warnings
+                   VaccinationList.tsx   — inline-editable list, 5 fields
+                   ProcedureList.tsx     — inline-editable list, search, category filter, sort
+                   PrintSummary.tsx      — print-only patient summary, filtered by share token sections
+  pages/        ← Layer 1 screen-level components (all complete)
+                   ProfilePage.tsx · InsurancePage.tsx · MedicationsPage.tsx
+                   VaccinationsPage.tsx · ProceduresPage.tsx · OverviewPage.tsx
+                   SharePage.tsx — section picker, QR hero, other sharing methods, access log
   App.tsx       ← routing only — renders PageHeader + Routes, no business logic
 ```
 
@@ -80,7 +94,7 @@ types.ts first.
 
 ## Running the project
 - Dev server: npm run dev
-- Tests: npm test
+- Tests: npm test (266 tests, 13 test files)
 - Watch mode: npm run test:watch
 
 ## Security notes (prototype)

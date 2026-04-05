@@ -50,6 +50,7 @@ interface PatientStore {
 
   // Access log
   appendLog: (entry: AccessLogEntry) => void;
+  clearLog: () => void;
 
   // Utility
   clearAll: () => void;
@@ -273,10 +274,15 @@ export const usePatientStore = create<PatientStore>()(
           return { log };
         }),
 
+      clearLog: () => {
+        storage.clearLog();
+        set({ log: [] });
+      },
+
       clearAll: () => {
         const fresh = createEmptyPatientRecord();
         storage.saveRecord(fresh);
-        storage.loadLog();
+        storage.clearLog();
         set({ record: fresh, log: [] });
       },
   })

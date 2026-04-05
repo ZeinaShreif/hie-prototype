@@ -13,10 +13,10 @@ Layer 4 is the production upgrade path.
 
 | Layer | Name | Status | Description |
 |-------|------|--------|-------------|
-| 0 | Data model | Complete | Types, schema, storage adapter |
-| 1 | Patient UI | In progress | Store ✅ · routing ✅ · integration tests ✅ · ProfilePage ✅ · InsurancePage ✅ · remaining pages (Medications, Vaccinations, Procedures, Overview) 🔶 |
-| 2 | Sharing | In progress | Core logic complete (sharing.ts ✅) — UI not yet built |
-| 3 | Consent & audit log | In progress | Core logic complete (accessLog.ts ✅) — UI not yet built |
+| 0 | Data model | ✅ Complete | Types, schema, storage adapter |
+| 1 | Patient UI | ✅ Complete | All pages and components built and tested |
+| 2 | Sharing | ✅ Complete | sharing.ts ✅ · SharePage.tsx ✅ · PrintSummary.tsx ✅ |
+| 3 | Consent & audit log | ✅ Complete | accessLog.ts ✅ · access log UI in SharePage ✅ |
 | 4 | Production | Deferred | Auth, encryption, HIPAA, FHIR API |
 
 ---
@@ -38,34 +38,52 @@ hie-prototype/
       sharing.test.ts         ✅
       accessLog.test.ts       ✅
     components/               Layer 1 — reusable UI components
-      PageHeader.tsx          ✅ Navy header with avatar, progress bar, nav tabs
+      PageHeader.tsx          ✅ Navy header with avatar, progress bar, nav tabs;
+                                 optional onSave prop with 2-second success state;
+                                 no-print class hides it when printing
       PersonalDetailsForm.tsx ✅
       EmergencyContactForm.tsx ✅
       AllergyList.tsx         ✅
       StateCombobox.tsx       ✅ Searchable US state dropdown
       formatPhone.ts          ✅ Phone auto-formatting utility
-      ProfilePage.test.tsx    ✅
-      [MedicationList.tsx]    🔶 Not yet built
-      [VaccinationList.tsx]   🔶 Not yet built
-      [ProcedureList.tsx]     🔶 Not yet built
       InsurancePrimaryForm.tsx     ✅ 6-field form, id prefix "primary"
       InsuranceSecondaryForm.tsx   ✅ opt-in form with add/remove toggle, id prefix "secondary"
+      MedicationList.tsx      ✅ Today/My List toggle; Today: adherence card, dose tracking
+                                 (taken/due/missed), one row per reminderTimes slot (multi-dose),
+                                 upcoming doses suppressed until scheduled time, mark-taken /
+                                 mark-missed actions, collapsible missed doses log (session-only);
+                                 My List: collapsible items, 10 fields (+ notes, patientNotes),
+                                 reminder toggle with smart time pickers, past meds section,
+                                 expired end-date warnings
+      VaccinationList.tsx     ✅ Inline-editable list, 5 fields
+      ProcedureList.tsx       ✅ Inline-editable list, search, category filter chips, sort toggle
+      PrintSummary.tsx        ✅ Print-only patient summary (display:none on screen);
+                                 filtered by sections prop; no nav, no colors
+      ProfilePage.test.tsx    ✅
+      InsurancePage.test.tsx  ✅
+      MedicationsPage.test.tsx ✅
+      VaccinationsPage.test.tsx ✅
+      ProceduresPage.test.tsx ✅
+      OverviewPage.test.tsx   ✅ Wrapped in MemoryRouter (component uses Link)
     pages/                    Layer 1 — screen-level views
       ProfilePage.tsx         ✅
-      MedicationsPage.tsx     🔶 Placeholder
-      VaccinationsPage.tsx    🔶 Placeholder
-      ProceduresPage.tsx      🔶 Placeholder
+      MedicationsPage.tsx     ✅
+      VaccinationsPage.tsx    ✅
+      ProceduresPage.tsx      ✅
       InsurancePage.tsx       ✅
-      OverviewPage.tsx        🔶 Placeholder (build last)
-      SharePage.tsx           ⬜ Deferred — Layer 2+3 UI
+      OverviewPage.tsx        ✅ Read-only identity banner + 4 SummaryCards with Edit links
+      SharePage.tsx           ✅ Section picker, QR hero, other sharing methods, access log
+      SharePage.test.tsx      ✅
       pages.test.ts           ✅
     App.tsx                   ✅ Routing only, no business logic
+    index.css                 ✅ Design tokens, hie-* classes, print styles (@page, .no-print, .print-only)
     main.tsx                  React entry point, do not edit
     test-setup.ts             Test bootstrap, do not edit
   CLAUDE.md                   Instructions for Claude Code sessions
   ARCHITECTURE.md             This file
   FrontEnd_Instructions.md    Frontend developer guide
   README.md                   Project overview
+  Medication_Mockup.html      Standalone interactive HTML mockup of MedicationsPage
   package.json
   vite.config.ts
   tsconfig.json
@@ -130,15 +148,21 @@ storage.ts, and any component that uses it.**
 
 Key types:
 - `PatientRecord` — the root object. Everything lives inside this.
-- `PersonalDetails` — name, DOB, gender, address, contact info,
+- `PersonalDetails` — name, DOB, sex, address, contact info,
   height, weight, language, marital status, blood type.
 - `EmergencyContact` — name, relationship, phone.
 - `Allergy` — substance, reaction, severity.
-- `Medication` — name, dosage, frequency, provider, dates, status.
-- `Vaccination` — vaccine name, date, lot number, site.
-- `Procedure` — name, date, facility, provider, category, notes.
-- `Insurance` — carrier, plan, member ID, group number, policy holder.
-- `ShareToken` — uuid token, timestamps, label, active flag.
+- `Medication` — name, dosage, frequency, provider, dates, status, source,
+  notes, patientNotes, reminder, reminderTimes, reminderDays.
+- `Vaccination` — vaccine name, date, lot number, site, source.
+- `Procedure` — name, date, facility, provider, category, notes,
+  outcome, followUpDate, cptCode, diagnosisCode.
+- `Insurance` — carrier, plan, member ID, group number, policy holder, effective date.
+- `ShareableSection` — union type of the 8 shareable record sections:
+  `'personal' | 'emergency' | 'allergies' | 'medications' |
+  'vaccinations' | 'procedures' | 'insurancePrimary' | 'insuranceSecondary'`
+- `ShareToken` — uuid token, timestamps, label, active flag,
+  `sections: ShareableSection[]` (which record sections this token grants access to).
 - `AccessLogEntry` — timestamp, method, token, label, revoked flag.
 
 ### src/core/schema.ts
@@ -149,11 +173,15 @@ construct objects inline in components.
 Functions:
 - `createEmptyPatientRecord()` — creates a fresh PatientRecord
   with a new uuid and current timestamps.
-- `newMedication()` — blank Medication with uuid, defaults to
-  active + self-reported.
-- `newVaccination()` — blank Vaccination with uuid.
-- `newProcedure()` — blank Procedure with uuid, defaults to 'other'.
+- `newMedication()` — blank Medication with uuid, defaults to active +
+  self-reported; notes/patientNotes default to `''`, reminder to `false`,
+  reminderTimes/reminderDays to `[]`.
+- `newVaccination()` — blank Vaccination with uuid, source: self-reported.
+- `newProcedure()` — blank Procedure with uuid, defaults to category 'other'.
+  Includes outcome, followUpDate (null), cptCode, diagnosisCode fields.
 - `newAllergy()` — blank Allergy with uuid, defaults to mild.
+- `newShareToken(label, sections?)` — blank ShareToken, active: true,
+  expiresAt: null. `sections` defaults to `[]`.
 
 ### src/core/storage.ts
 The only file in the project that touches localStorage.
@@ -161,13 +189,17 @@ All reads and writes go through this adapter.
 In production (Layer 4), swap this file's implementation for
 API calls — nothing else in the project needs to change.
 
+Two localStorage keys: `hie_patient_record` and `hie_access_log`.
+
 Functions:
 - `storage.loadRecord()` — returns PatientRecord or null.
-- `storage.saveRecord(record)` — serializes and saves. Also
-  updates the record's updatedAt timestamp.
+- `storage.saveRecord(record)` — serializes and saves. Updates
+  `updatedAt` to the current timestamp in the persisted copy;
+  does not mutate the passed-in record object.
 - `storage.clearRecord()` — removes the record entirely.
 - `storage.loadLog()` — returns AccessLogEntry array, newest first.
 - `storage.appendLogEntry(entry)` — prepends a new log entry.
+- `storage.clearLog()` — removes the log key entirely.
 
 ### src/core/store.ts
 The Zustand store. The single point of contact between the UI and
@@ -191,6 +223,12 @@ Key exports:
   (`usePatientStore(s => s.record.personal)`) to avoid unnecessary
   re-renders.
 
+Sharing and log actions:
+- `addShareToken(token)` — adds a token to the shareTokens map.
+- `revokeShareToken(token)` — sets `active: false` on that token.
+- `appendLog(entry)` — prepends an AccessLogEntry (newest first).
+- `clearLog()` — clears the in-memory log and removes `hie_access_log` from localStorage.
+
 ### src/core/schema.test.ts
 Vitest tests for the factory functions and storage adapter.
 Run with `npm test`.
@@ -206,6 +244,11 @@ Layer 2 pure business logic for the sharing feature. No React imports,
 no browser APIs, no localStorage access.
 
 Exports:
+- `ALL_SECTIONS: ShareableSection[]` — ordered array of all 8 section keys.
+  Used as the default selection in the SharePage section picker.
+- `createShareToken(label, sections, expiresAt?)` — wraps `newShareToken`
+  from schema.ts with a richer signature. `expiresAt` defaults to null
+  when omitted. Used by SharePage instead of calling newShareToken directly.
 - `isTokenActive(token: ShareToken): boolean` — returns true if
   `token.active` is true and `expiresAt` is null or in the future.
   Used internally by `getActiveTokens` and `getRevokedTokens`, and
@@ -213,10 +256,9 @@ Exports:
 - `shareUrl(token: string, origin: string): string` — builds the
   provider-facing view URL: `${origin}/view/${token}`. Caller must
   supply `origin` (e.g. `window.location.origin`) because browser
-  globals are not allowed inside `src/core/`. **When Layer 2 is wired
-  into the frontend, `/view/:token` must be added as a route in
-  `App.tsx` with a corresponding `ViewPage` that reads the token from
-  `useParams` and looks it up in the store.**
+  globals are not allowed inside `src/core/`. Note: `/view/:token`
+  still needs to be added as a route in App.tsx with a ViewPage for
+  the provider-facing read-only view (Layer 4 concern).
 - `getActiveTokens(tokens: Record<string, ShareToken>): ShareToken[]`
   — filters the `shareTokens` map to only usable (active,
   non-expired) tokens. Used by the share screen to show live tokens.
@@ -233,7 +275,7 @@ Exports:
   (section omitted entirely when `insurancePrimary` is null).
 
 ### src/core/sharing.test.ts
-Vitest tests for all five functions in `sharing.ts` (22 tests).
+Vitest tests for all functions in `sharing.ts`.
 
 Coverage:
 - `isTokenActive` — active/inactive flag, future/past expiry, and
@@ -376,6 +418,73 @@ Non-React utilities in this directory:
 - `formatPhone.ts` — pure function, no React. Formats a string as a
   US phone number `(XXX) XXX-XXXX` as the user types. Used by
   `PersonalDetailsForm` and `EmergencyContactForm`.
+
+### src/components/MedicationList.tsx
+Two-view component toggled by a "Today / My List" pill at the top.
+
+**Today view** (default): dose alert banner for the first due medication;
+"This week" adherence card with a progress bar and on-track/needs-attention/
+off-track badge; today's medications list (only meds with `reminder: true`).
+Multi-dose support: each entry in `reminderTimes` renders as a separate dose
+row keyed by `"${med.id}-${index}"`. Upcoming doses (scheduled time in the
+future) are suppressed until their time arrives. Each row shows a
+Taken ✓ / Due now / Missed pill and expands to show details with
+"Mark as taken" / "Mark as missed" / "Undo" actions. A collapsible
+"Missed doses (N)" log section below the list records every missed dose
+with the medication name, scheduled time, and timestamp — entries can be
+deleted (which resets the dose back to Due). Today state is session-only
+(resets on page reload).
+
+**My List view**: active/PRN medications in a collapsible list — header row
+shows status dot, name + dosage·frequency meta, status badge, chevron, ×
+delete; all items start expanded. Fields grid (10 fields):
+name, dosage, frequency, prescribingProvider, startDate,
+endDate (nullable), status, source, notes (Instructions/Notes, full-width),
+patientNotes (My notes textarea, amber tint, full-width).
+Reminder toggle switch — when on, shows smart time pickers: 1 slot for
+once-daily, 2 for twice-daily, day-of-week picker for weekly frequencies.
+Status → past auto-sets endDate to today if blank.
+Expired end-date banner (active/PRN med whose endDate < today) with
+"Still taking — clear end date" / "Mark as past" actions.
+Past medications hidden in a collapsible "Past medications (N)" section.
+Id prefix: `med${Field}-${med.id}`.
+
+Store actions used: `addMedication`, `updateMedication`, `removeMedication`.
+
+### src/components/VaccinationList.tsx
+Inline-editable list of `Vaccination` items. 5 fields per row in a
+2-column grid: vaccineName, dateAdministered, lotNumber,
+administeringSite, source (select). Count badge in the section header.
+Id prefix: `vax${Field}-${vax.id}`.
+
+Store actions used: `addVaccination`, `updateVaccination`, `removeVaccination`.
+
+### src/components/ProcedureList.tsx
+Inline-editable list of `Procedure` items with expand-to-detail rows.
+Features: search input (filters by name/provider), category filter
+chips (All / Surgery / Screening / Diagnostic / Other), sort toggle
+(Newest / Oldest). Core fields visible in collapsed row; expanded view
+shows all 10 fields including cptCode, diagnosisCode, outcome,
+followUpDate, and notes textarea.
+
+Store actions used: `addProcedure`, `updateProcedure`, `removeProcedure`.
+
+### src/components/PrintSummary.tsx
+Rendered outside the `no-print` page wrapper in `SharePage.tsx`.
+Has `className="print-only"` so it is `display: none` on screen and
+`display: block` during printing. Reads the patient record from the
+store. Accepts a `sections: ShareableSection[]` prop and only renders
+sections that appear in that array. Layout: plain black serif text,
+patient name + DOB header, one section per block, footer line
+"Generated by HIE Prototype — not for clinical use". No colors, no
+nav, no buttons.
+
+### src/components/OverviewPage.test.tsx
+Component tests for `OverviewPage`. All renders are wrapped in
+`MemoryRouter` from react-router-dom because the component uses
+`<Link>`. Covers: identity banner (name, DOB, sex, blood type,
+emergency contact, insurance), all 4 section summary cards, empty
+labels, Edit links to correct routes, item previews.
 
 ### src/components/StateCombobox.tsx
 Custom searchable combobox for selecting a US state. Renders a plain
@@ -553,13 +662,13 @@ Route map:
 
 | File | Path | Purpose |
 |------|------|---------|
-| `OverviewPage.tsx` | `/` | Summary of all sections |
-| `ProfilePage.tsx` | `/profile` | Personal details + emergency contact |
-| `MedicationsPage.tsx` | `/medications` | Medication list + add/edit/remove |
-| `VaccinationsPage.tsx` | `/vaccinations` | Vaccination list + add/edit/remove |
-| `ProceduresPage.tsx` | `/procedures` | Procedure list + add/edit/remove |
+| `OverviewPage.tsx` | `/` | Read-only identity banner + 4 summary cards (allergies, medications, vaccinations, procedures) with Edit links |
+| `ProfilePage.tsx` | `/profile` | Personal details + emergency contact + allergy list |
+| `MedicationsPage.tsx` | `/medications` | Medication list — add/edit/remove, 8 fields |
+| `VaccinationsPage.tsx` | `/vaccinations` | Vaccination list — add/edit/remove, 5 fields |
+| `ProceduresPage.tsx` | `/procedures` | Procedure list — add/edit/remove, search, category filter, sort |
 | `InsurancePage.tsx` | `/insurance` | Primary insurance form + opt-in secondary insurance form |
-| `SharePage.tsx` | `/share` | Share tokens + access log |
+| `SharePage.tsx` | `/share` | Section picker · QR hero · clipboard/print/link · collapsible access log with Clear log + per-entry Revoke |
 
 ### src/pages/pages.test.ts
 Smoke tests that verify every page module exists and exports a
@@ -602,6 +711,23 @@ Both types carry `source: 'provider' | 'self-reported'`. This
 distinguishes data entered by the patient from data pulled from
 a verified EHR. Clinically important — providers need to know
 which data has been verified.
+
+### ShareableSection on tokens
+Every `ShareToken` carries a `sections: ShareableSection[]` array
+controlling which record sections that token grants access to.
+`ALL_SECTIONS` in `sharing.ts` is the canonical ordered list of all 8.
+The SharePage section picker defaults to all 8 selected and
+regenerates the token automatically whenever the selection changes.
+`PrintSummary` receives the same `sections` array and only renders
+matching sections.
+
+### Print isolation
+`PageHeader` has `className="no-print"`. The SharePage wrapper div
+has `className="p-4 no-print"`. `PrintSummary` has
+`className="print-only"`. `@page { margin: 0 }` in `index.css`
+suppresses the browser's URL header/footer line. When `window.print()`
+is called, only `PrintSummary` is visible — the entire app chrome
+disappears.
 
 ### Storage adapter pattern
 Nothing in the project calls localStorage directly except
