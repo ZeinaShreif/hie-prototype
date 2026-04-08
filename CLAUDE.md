@@ -48,10 +48,14 @@ src/
                    ProcedureList.tsx     — inline-editable list, search, category filter, sort
                    PrintSummary.tsx      — print-only patient summary, filtered by share token sections
   pages/        ← Layer 1 screen-level components (all complete)
+                   LandingPage.tsx — home screen at /, folder-style nav, disclaimer modal,
+                                     HealthPass branding; no PageHeader (standalone)
+                   LandingPage.test.tsx — 36 tests
                    ProfilePage.tsx · InsurancePage.tsx · MedicationsPage.tsx
-                   VaccinationsPage.tsx · ProceduresPage.tsx · OverviewPage.tsx
+                   VaccinationsPage.tsx · ProceduresPage.tsx · OverviewPage.tsx (route /overview)
                    SharePage.tsx — section picker, QR hero, other sharing methods, access log
-  App.tsx       ← routing only — renders PageHeader + Routes, no business logic
+  App.tsx       ← routing only — / → LandingPage (standalone), /* → AppShell
+                   (AppShell renders PageHeader + inner Routes); no business logic
 ```
 
 ## Non-negotiable rules
@@ -94,7 +98,7 @@ types.ts first.
 
 ## Running the project
 - Dev server: npm run dev
-- Tests: npm test (266 tests, 13 test files)
+- Tests: npm test (295 tests, 14 test files)
 - Watch mode: npm run test:watch
 
 ## Security notes (prototype)

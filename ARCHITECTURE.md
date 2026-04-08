@@ -66,15 +66,20 @@ hie-prototype/
       ProceduresPage.test.tsx ✅
       OverviewPage.test.tsx   ✅ Wrapped in MemoryRouter (component uses Link)
     pages/                    Layer 1 — screen-level views
+      LandingPage.tsx         ✅ Home screen — folder-style nav, HealthPass branding,
+                                 disclaimer modal (once per session), patient name from store
+      LandingPage.test.tsx    ✅ 36 tests (top strip, hero, folder labels/links, disclaimer)
       ProfilePage.tsx         ✅
       MedicationsPage.tsx     ✅
       VaccinationsPage.tsx    ✅
       ProceduresPage.tsx      ✅
       InsurancePage.tsx       ✅
-      OverviewPage.tsx        ✅ Read-only identity banner + 4 SummaryCards with Edit links
+      OverviewPage.tsx        ✅ Read-only identity banner + 4 SummaryCards with Edit links (route /overview)
       SharePage.tsx           ✅ Section picker, QR hero, other sharing methods, access log
       SharePage.test.tsx      ✅
       pages.test.ts           ✅
+  public/
+    HealthPass.svg            ✅ Logo used in LandingPage Overview folder
     App.tsx                   ✅ Routing only, no business logic
     index.css                 ✅ Design tokens, hie-* classes, print styles (@page, .no-print, .print-only)
     main.tsx                  React entry point, do not edit
@@ -123,17 +128,20 @@ the shared `hie-*` component classes defined in `src/index.css`.
 
 ### PageHeader
 `src/components/PageHeader.tsx` renders the persistent header shown
-on every page. It reads `record.personal` from the store (via
-`usePatientStore` selector) and renders:
-- Avatar circle showing the patient's initials (falls back to "PA")
-- Patient full name and formatted date of birth
+on every page except `LandingPage`. It reads `record.personal` from
+the store (via `usePatientStore` selector) and renders:
+- Avatar circle showing the patient's initials (falls back to "PA"),
+  wrapped in a `<Link to="/">` so clicking it navigates back to LandingPage
+- Patient full name and today's formatted date (weekday, month, day, year)
 - "Save changes" button (UI only — wiring deferred)
 - Profile completeness progress bar (percentage of PersonalDetails fields filled)
-- Horizontal nav tab bar with `NavLink` entries for all 7 routes
+- Horizontal nav tab bar with `NavLink` entries for all 7 inner routes
+  (`/overview`, `/profile`, `/medications`, `/vaccinations`,
+   `/procedures`, `/insurance`, `/share`)
 
-The nav tabs live in `PageHeader`, not in `App.tsx`. `App.tsx` renders
-`PageHeader` above the `<Routes>` block and contains no nav logic of
-its own.
+The nav tabs live in `PageHeader`, not in `App.tsx`. `PageHeader` is
+rendered by `AppShell` (inside `App.tsx`) above the inner `<Routes>`
+block and contains no nav logic of its own.
 
 ---
 
@@ -480,11 +488,11 @@ patient name + DOB header, one section per block, footer line
 nav, no buttons.
 
 ### src/components/OverviewPage.test.tsx
-Component tests for `OverviewPage`. All renders are wrapped in
-`MemoryRouter` from react-router-dom because the component uses
-`<Link>`. Covers: identity banner (name, DOB, sex, blood type,
-emergency contact, insurance), all 4 section summary cards, empty
-labels, Edit links to correct routes, item previews.
+Component tests for `OverviewPage` (route `/overview`). All renders
+are wrapped in `MemoryRouter` from react-router-dom because the
+component uses `<Link>`. Covers: identity banner (name, DOB, sex,
+blood type, emergency contact, insurance), all 4 section summary
+cards, empty labels, Edit links to correct routes, item previews.
 
 ### src/components/StateCombobox.tsx
 Custom searchable combobox for selecting a US state. Renders a plain
@@ -643,8 +651,12 @@ Composes `PersonalDetailsForm`, `EmergencyContactForm`, and
 serves as the pattern for all other pages.
 
 ### src/App.tsx
-The application shell. Contains `BrowserRouter`, renders `<PageHeader />`
-above the content area, and declares the `<Routes>` / `<Route>` entries.
+The application shell. Contains `BrowserRouter` and two-level routing:
+
+- `/` renders `LandingPage` directly (no `PageHeader`, no `AppShell`).
+- `/*` renders `AppShell`, which wraps `<PageHeader />` above the inner
+  `<Routes>` block for all other pages.
+
 **No business logic, no store access, no data fetching here.**
 If you find yourself importing `usePatientStore` in App.tsx, move
 that logic into the relevant page or component instead.
@@ -662,7 +674,8 @@ Route map:
 
 | File | Path | Purpose |
 |------|------|---------|
-| `OverviewPage.tsx` | `/` | Read-only identity banner + 4 summary cards (allergies, medications, vaccinations, procedures) with Edit links |
+| `LandingPage.tsx` | `/` | Home screen — folder-style nav, HealthPass branding, disclaimer modal |
+| `OverviewPage.tsx` | `/overview` | Read-only identity banner + 4 summary cards (allergies, medications, vaccinations, procedures) with Edit links |
 | `ProfilePage.tsx` | `/profile` | Personal details + emergency contact + allergy list |
 | `MedicationsPage.tsx` | `/medications` | Medication list — add/edit/remove, 8 fields |
 | `VaccinationsPage.tsx` | `/vaccinations` | Vaccination list — add/edit/remove, 5 fields |
@@ -731,7 +744,12 @@ disappears.
 
 ### Storage adapter pattern
 Nothing in the project calls localStorage directly except
-storage.ts. This is an intentional architectural boundary.
+storage.ts — with one deliberate exception: `LandingPage.tsx`
+reads and writes the key `hie_disclaimer_acknowledged` directly.
+This key is a UI-only flag (not PHI, not part of the patient record)
+so routing it through storage.ts would be inappropriate. It is
+intentionally excluded from the adapter boundary.
+
 When Layer 4 replaces localStorage with a real backend, only
 storage.ts changes. All components and the Zustand store
 remain untouched.

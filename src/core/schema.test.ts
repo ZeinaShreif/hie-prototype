@@ -147,6 +147,32 @@ describe('newAccessLogEntry', () => {
   });
 });
 
+describe('storage — disclaimer acknowledgement', () => {
+  beforeEach(() => localStorageMock.clear());
+
+  it('loadDisclaimerAck returns false when not yet set', () => {
+    expect(storage.loadDisclaimerAck()).toBe(false);
+  });
+
+  it('loadDisclaimerAck returns true after saveDisclaimerAck', () => {
+    storage.saveDisclaimerAck();
+    expect(storage.loadDisclaimerAck()).toBe(true);
+  });
+
+  it('saveDisclaimerAck is idempotent — calling it twice still returns true', () => {
+    storage.saveDisclaimerAck();
+    storage.saveDisclaimerAck();
+    expect(storage.loadDisclaimerAck()).toBe(true);
+  });
+
+  it('disclaimer key is independent from the patient record key', () => {
+    storage.saveDisclaimerAck();
+    storage.clearRecord();
+    expect(storage.loadDisclaimerAck()).toBe(true);
+    expect(storage.loadRecord()).toBeNull();
+  });
+});
+
 describe('storage adapter', () => {
   beforeEach(() => localStorageMock.clear());
 

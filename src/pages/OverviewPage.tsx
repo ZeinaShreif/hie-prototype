@@ -9,7 +9,7 @@ interface SummaryCardProps {
   accentBg: string;
   accentBorder: string;
   emptyLabel: string;
-  items: string[];
+  items: { id: string; label: string }[];
 }
 
 function SummaryCard({ title, count, to, accentColor, accentBg, accentBorder, emptyLabel, items }: SummaryCardProps) {
@@ -46,9 +46,9 @@ function SummaryCard({ title, count, to, accentColor, accentBg, accentBorder, em
           <p className="text-sm italic" style={{ color: 'var(--label-color)' }}>{emptyLabel}</p>
         ) : (
           <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-            {items.map((item, i) => (
+            {items.map(({ id, label }, i) => (
               <li
-                key={item}
+                key={id}
                 className="text-sm"
                 style={{
                   color: 'var(--text-dark)',
@@ -56,7 +56,7 @@ function SummaryCard({ title, count, to, accentColor, accentBg, accentBorder, em
                   borderBottom: i < items.length - 1 ? '1px solid var(--ice-divider)' : 'none',
                 }}
               >
-                {item}
+                {label}
               </li>
             ))}
           </ul>
@@ -108,6 +108,7 @@ export default function OverviewPage() {
           >
             Edit →
           </Link>
+
         </div>
         {emergencyContact.name && (
           <p className="text-sm" style={{ color: 'var(--label-color)', marginTop: 6 }}>
@@ -132,9 +133,10 @@ export default function OverviewPage() {
         accentBg="#FFF0F0"
         accentBorder="#FFCDD2"
         emptyLabel="No allergies recorded."
-        items={allergies.map((a) =>
-          [a.substance, a.severity].filter(Boolean).join(' · ')
-        )}
+        items={allergies.map((a) => ({
+          id: a.id,
+          label: [a.substance, a.severity].filter(Boolean).join(' · '),
+        }))}
       />
 
       {/* Medications */}
@@ -146,9 +148,10 @@ export default function OverviewPage() {
         accentBg="#E8F5E9"
         accentBorder="#A5D6A7"
         emptyLabel="No medications recorded."
-        items={medications.map((m) =>
-          [m.name, m.dosage, m.status].filter(Boolean).join(' · ')
-        )}
+        items={medications.map((m) => ({
+          id: m.id,
+          label: [m.name, m.dosage, m.status].filter(Boolean).join(' · '),
+        }))}
       />
 
       {/* Vaccinations */}
@@ -160,9 +163,10 @@ export default function OverviewPage() {
         accentBg="#E3F2FD"
         accentBorder="#90CAF9"
         emptyLabel="No vaccinations recorded."
-        items={vaccinations.map((v) =>
-          [v.vaccineName, v.dateAdministered].filter(Boolean).join(' · ')
-        )}
+        items={vaccinations.map((v) => ({
+          id: v.id,
+          label: [v.vaccineName, v.dateAdministered].filter(Boolean).join(' · '),
+        }))}
       />
 
       {/* Procedures */}
@@ -174,9 +178,10 @@ export default function OverviewPage() {
         accentBg="#F3E5F5"
         accentBorder="#CE93D8"
         emptyLabel="No procedures recorded."
-        items={procedures.map((p) =>
-          [p.procedureName, p.date, p.category].filter(Boolean).join(' · ')
-        )}
+        items={procedures.map((p) => ({
+          id: p.id,
+          label: [p.procedureName, p.date, p.category].filter(Boolean).join(' · '),
+        }))}
       />
 
     </div>

@@ -44,4 +44,12 @@ export const storage = {
   clearLog(): void {
     localStorage.removeItem(LOG_KEY);
   },
+
+  // UI-only preference — not PHI, intentionally stays in localStorage post-Supabase migration
+  loadDisclaimerAck(): boolean {
+    return !!localStorage.getItem('hie_disclaimer_acknowledged');
+  },
+  saveDisclaimerAck(): void {
+    localStorage.setItem('hie_disclaimer_acknowledged', '1');
+  },
 };

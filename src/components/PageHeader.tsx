@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import { usePatientStore } from '../core/store';
+import { computeProgress } from '../core/progress';
 
 const NAV_ITEMS = [
-  { to: '/',            label: 'Overview',  end: true  },
+  { to: '/overview',    label: 'Overview',  end: true  },
   { to: '/profile',     label: 'Profile',   end: false },
   { to: '/medications', label: 'Medications', end: false },
   { to: '/vaccinations',label: 'Vaccines',  end: false },
@@ -12,23 +13,6 @@ const NAV_ITEMS = [
   { to: '/share',       label: 'Share',     end: false },
 ];
 
-function computeProgress(p: {
-  firstName: string; lastName: string; dateOfBirth: string; sex: string;
-  address: string; city: string; state: string; zip: string; phone: string;
-  email: string; preferredLanguage: string; maritalStatus: string; bloodType: string;
-  heightFt: number | null; heightIn: number | null; weightLbs: number | null;
-}): number {
-  const values = [
-    p.firstName, p.lastName, p.dateOfBirth, p.sex,
-    p.address, p.city, p.state, p.zip, p.phone, p.email,
-    p.preferredLanguage, p.maritalStatus, p.bloodType,
-    p.heightFt !== null ? String(p.heightFt) : '',
-    p.heightIn !== null ? String(p.heightIn) : '',
-    p.weightLbs !== null ? String(p.weightLbs) : '',
-  ];
-  const filled = values.filter((v) => v !== '').length;
-  return Math.round((filled / values.length) * 100);
-}
 
 function formatToday(): string {
   return new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
@@ -44,29 +28,30 @@ export default function PageHeader({ onSave }: PageHeaderProps) {
 
   const first = personal.firstName || '';
   const last = personal.lastName || '';
-  const initials = ((first[0] ?? '') + (last[0] ?? '')).toUpperCase() || 'PA';
   const fullName = [first, last].filter(Boolean).join(' ') || 'Your Name';
   const progress = computeProgress(personal);
 
   return (
     <header className="bg-cobalt-900 no-print">
-      {/* Avatar + Name + Save */}
-      <div className="flex items-center gap-3 px-5 pt-5 pb-4">
-        <div
-          className="flex items-center justify-center rounded-full shrink-0 font-extrabold text-sm bg-cobalt-500 text-cobalt-900"
-          style={{ width: 46, height: 46 }}
-        >
-          {initials}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="font-extrabold text-white truncate" style={{ fontSize: 17, fontFamily: "'Libre Baskerville', Georgia, serif" }}>
-            {fullName}
+      {/* Row 1: Home icon + HealthPass wordmark + Save */}
+      <div className="flex items-center gap-3 px-5 pt-4 pb-3">
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, textDecoration: 'none' }}>
+          <div
+            style={{
+              width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+              background: 'rgba(255,255,255,0.10)',
+              border: '1.5px solid rgba(255,255,255,0.18)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 18,
+            }}
+          >
+            🏠
           </div>
-          <div className="text-xs text-cobalt-300" style={{ fontSize: 12 }}>
-            {formatToday()}
+          <div style={{ fontFamily: "'Libre Baskerville', Georgia, serif", fontWeight: 700, fontSize: 18 }}>
+            <span style={{ color: '#D4A017' }}>Health</span>
+            <span style={{ color: 'var(--cyan-bright)' }}>Pass</span>
           </div>
-        </div>
+        </Link>
 
         {/* Production upgrade: replace handleSave body with an API save call */}
         <button
@@ -89,6 +74,16 @@ export default function PageHeader({ onSave }: PageHeaderProps) {
         >
           {saved ? 'Saved ✓' : 'Save changes'}
         </button>
+      </div>
+
+      {/* Row 2: Patient name + date */}
+      <div className="px-5 pb-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="font-extrabold text-white" style={{ fontSize: 17, fontFamily: "'Libre Baskerville', Georgia, serif" }}>
+          {fullName}
+        </div>
+        <div className="text-cobalt-300" style={{ fontSize: 11.5, marginTop: 2 }}>
+          {formatToday()}
+        </div>
       </div>
 
       {/* Progress bar */}

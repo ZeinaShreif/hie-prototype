@@ -14,9 +14,9 @@ hie-prototype/
 │
 ├── App.tsx                         Routing shell — no store access, no business logic
 │   ├── uses: react-router-dom
-│   ├── renders: <PageHeader /> (on every route)
-│   └── routes →
-│       ├── /              → OverviewPage
+│   ├── /              → LandingPage (standalone — no PageHeader)
+│   └── /*             → AppShell (renders <PageHeader /> above inner routes)
+│       ├── /overview      → OverviewPage
 │       ├── /profile       → ProfilePage
 │       ├── /medications   → MedicationsPage
 │       ├── /vaccinations  → VaccinationsPage
@@ -60,12 +60,12 @@ hie-prototype/
 │
 ├── components/                     Layer 1 — reusable UI pieces
 │   │
-│   ├── PageHeader.tsx              Navy header rendered on every page
-│   │   ├── imports: react-router-dom (NavLink), store
+│   ├── PageHeader.tsx              Navy header rendered on every inner-route page
+│   │   ├── imports: react-router-dom (NavLink, Link), store
 │   │   ├── props: onSave?: () => void
 │   │   ├── reads store: personal
-│   │   └── renders: avatar · full name · DOB · save button (2s success state)
-│   │                progress bar · nav tabs (Overview / Profile / Meds …)
+│   │   └── renders: avatar (Link to /) · full name · today's date · save button (2s success state)
+│   │                progress bar · nav tabs (/overview / /profile / /medications …)
 │   │                className="no-print" — hidden when printing
 │   │
 │   ├── PersonalDetailsForm.tsx     All personal detail fields
@@ -128,6 +128,17 @@ hie-prototype/
 └── pages/                          Layer 1 — screen-level composers
     │                               (form logic stays in components, not here)
     │
+    ├── LandingPage.tsx             Home screen at /
+    │   ├── imports: react-router-dom (Link), store
+    │   ├── reads store: personal (for patient name in top strip)
+    │   ├── reads localStorage: hie_disclaimer_acknowledged (UI-only flag, not PHI)
+    │   └── renders: top strip (name, Settings/Sign-out stubs) · HealthPass hero ·
+    │               folder nav (OverviewFolder full-width + 6 GridFolders) ·
+    │               disclaimer warning box · DisclaimerModal (shown once per session)
+    │
+    ├── LandingPage.test.tsx        29 tests — top strip, hero, folder labels/links,
+    │                               disclaimer warning box, disclaimer modal
+    │
     ├── ProfilePage.tsx             Composes the three profile components
     │   ├── renders: <PersonalDetailsForm />
     │   │           <EmergencyContactForm />
@@ -143,7 +154,7 @@ hie-prototype/
     ├── VaccinationsPage.tsx        Renders <VaccinationList />
     ├── ProceduresPage.tsx          Renders <ProcedureList />
     │
-    ├── OverviewPage.tsx            Read-only summary page
+    ├── OverviewPage.tsx            Read-only summary page at /overview
     │   ├── renders: identity banner (name, DOB, sex, blood type,
     │   │           emergency contact, insurance carrier)
     │   └── renders: 4 SummaryCards (Allergies, Medications,

@@ -227,6 +227,135 @@ describe('SharePage — access log empty state', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Section picker
+// ---------------------------------------------------------------------------
+
+describe('SharePage — section picker', () => {
+  it('all 8 sections are selected by default', () => {
+    render(<SharePage />);
+    expect(screen.getByText('Sharing 8 of 8 sections')).toBeInTheDocument();
+  });
+
+  it('deselecting a section decrements the sharing count', () => {
+    render(<SharePage />);
+    fireEvent.click(screen.getByLabelText('Allergies'));
+    expect(screen.getByText('Sharing 7 of 8 sections')).toBeInTheDocument();
+  });
+
+  it('reselecting a section restores the count', () => {
+    render(<SharePage />);
+    const checkbox = screen.getByLabelText('Allergies');
+    fireEvent.click(checkbox); // deselect
+    fireEvent.click(checkbox); // reselect
+    expect(screen.getByText('Sharing 8 of 8 sections')).toBeInTheDocument();
+  });
+
+  it('deselecting a section revokes the old token and creates a new one', () => {
+    render(<SharePage />);
+    const oldTokenId = Object.keys(usePatientStore.getState().record.shareTokens)[0];
+    fireEvent.click(screen.getByLabelText('Allergies'));
+    const tokens = Object.values(usePatientStore.getState().record.shareTokens);
+    expect(tokens).toHaveLength(2);
+    const old = tokens.find((t) => t.token === oldTokenId);
+    expect(old?.active).toBe(false);
+  });
+
+  it('the new token after a section change contains the updated sections', () => {
+    render(<SharePage />);
+    fireEvent.click(screen.getByLabelText('Allergies'));
+    const tokens = Object.values(usePatientStore.getState().record.shareTokens);
+    const activeToken = tokens.find((t) => t.active);
+    expect(activeToken?.sections).not.toContain('allergies');
+    expect(activeToken?.sections).toHaveLength(7);
+  });
+
+  it('all 8 section checkboxes are rendered', () => {
+    render(<SharePage />);
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes).toHaveLength(8);
+  });
+
+  it('all 8 section checkboxes are checked by default', () => {
+    render(<SharePage />);
+    const checkboxes = screen.getAllByRole('checkbox');
+    checkboxes.forEach((cb) => expect(cb).toBeChecked());
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Clear log
+// ---------------------------------------------------------------------------
+
+describe('SharePage — clear log', () => {
+  it('Clear log button is not shown when the log is empty', () => {
+    render(<SharePage />);
+    expect(screen.queryByRole('button', { name: 'Clear log' })).not.toBeInTheDocument();
+  });
+
+  it('Clear log button appears after an event is logged', () => {
+    render(<SharePage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Copy link' }));
+    expect(screen.getByRole('button', { name: 'Clear log' })).toBeInTheDocument();
+  });
+
+  it('clicking Clear log empties the store log', () => {
+    render(<SharePage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Copy link' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Clear log' }));
+    expect(usePatientStore.getState().log).toHaveLength(0);
+  });
+
+  it('clicking Clear log restores the empty state message', () => {
+    render(<SharePage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Copy link' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Clear log' }));
+    expect(screen.getByText('No sharing activity yet.')).toBeInTheDocument();
+  });
+
+  it('clicking Clear log does not collapse the log section', () => {
+    render(<SharePage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Copy link' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Clear log' }));
+    // empty state is visible — log is still open
+    expect(screen.getByText('No sharing activity yet.')).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Access log — collapse / expand
+// ---------------------------------------------------------------------------
+
+describe('SharePage — access log collapse/expand', () => {
+  it('log is open by default', () => {
+    render(<SharePage />);
+    expect(screen.getByText('No sharing activity yet.')).toBeInTheDocument();
+  });
+
+  it('clicking the Access log heading collapses the log', () => {
+    render(<SharePage />);
+    fireEvent.click(screen.getByRole('heading', { name: 'Access log' }));
+    expect(screen.queryByText('No sharing activity yet.')).not.toBeInTheDocument();
+  });
+
+  it('clicking the heading again re-expands the log', () => {
+    render(<SharePage />);
+    const heading = screen.getByRole('heading', { name: 'Access log' });
+    fireEvent.click(heading); // collapse
+    fireEvent.click(heading); // expand
+    expect(screen.getByText('No sharing activity yet.')).toBeInTheDocument();
+  });
+
+  it('log entries are hidden when collapsed', () => {
+    render(<SharePage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Copy link' }));
+    // "Clipboard" is the method badge text — only appears inside log entries
+    expect(screen.getByText('Clipboard')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('heading', { name: 'Access log' }));
+    expect(screen.queryByText('Clipboard')).not.toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Access log — entries and revoke
 // ---------------------------------------------------------------------------
 
