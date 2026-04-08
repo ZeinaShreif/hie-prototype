@@ -6,15 +6,6 @@ A patient-controlled health information exchange prototype. Patients fill in the
 
 ---
 
-## Documentation
-
-| Document | Description |
-|----------|-------------|
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | System design, build layers, file reference, data decisions |
-| [FrontEnd_Instructions.md](./FrontEnd_Instructions.md) | Frontend developer guide — what to build, patterns, styling, rules |
-
----
-
 ## Current build status
 
 | Layer | Name | Status |
@@ -33,7 +24,9 @@ A patient-controlled health information exchange prototype. Patients fill in the
 - **Tailwind CSS 4** — utility-class styling via Vite plugin
 - **Zustand** — global state, no persist middleware (storage handled by `src/core/storage.ts`)
 - **react-router-dom v7** — client-side routing
-- **Vitest** + **@testing-library/react** — unit and component tests
+- **qrcode.react** — QR code generation for share page
+- **uuid** — collision-free IDs for all list items
+- **Vitest** + **@testing-library/react** — unit and component tests (344 tests, 15 test files)
 - **localStorage** — prototype persistence (swappable at Layer 4)
 
 ---
@@ -65,13 +58,30 @@ npm run lint         # ESLint
 
 ```
 src/
-  core/          Layer 0 — pure logic, no UI dependencies (do not modify)
+  core/          Layer 0 — pure logic, no UI dependencies
+    types.ts       Data model (source of truth)
+    schema.ts      Factory functions for all record types
+    storage.ts     localStorage adapter (only place that touches storage)
+    store.ts       Zustand store with all actions
+    sharing.ts     Layer 2 — share token generation and URL helpers
+    accessLog.ts   Layer 3 — consent and audit log logic
+    progress.ts    Profile completion percentage (used by PageHeader)
   components/    Layer 1 — reusable UI components
+    PageHeader.tsx, PersonalDetailsForm.tsx, EmergencyContactForm.tsx
+    AllergyList.tsx, MedicationList.tsx, VaccinationList.tsx
+    ProcedureList.tsx, InsurancePrimaryForm.tsx, InsuranceSecondaryForm.tsx
+    PrintSummary.tsx, StateCombobox.tsx, formatPhone.ts
   pages/         Layer 1 — screen-level views, one per route
-  App.tsx        Routing only
+    LandingPage.tsx    / — home, folder nav, HealthPass branding
+    ProfilePage.tsx    /profile
+    InsurancePage.tsx  /insurance
+    MedicationsPage.tsx  /medications
+    VaccinationsPage.tsx /vaccinations
+    ProceduresPage.tsx   /procedures
+    OverviewPage.tsx     /overview — read-only summary with edit links
+    SharePage.tsx        /share — QR code, copy/print, section picker, access log
+  App.tsx        Routing only — no store access, no business logic
   main.tsx       React entry point
 ```
 
-Layers 2 and 3 core logic (`sharing.ts`, `accessLog.ts`) and UI (`SharePage.tsx`, `PrintSummary.tsx`) are complete. Layer 4 (auth, encryption, HIPAA, FHIR API) is deferred.
-
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full annotated file reference and [FrontEnd_Instructions.md](./FrontEnd_Instructions.md) for component patterns, styling guide, and build order.
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full annotated file reference, data model, and architectural decisions.

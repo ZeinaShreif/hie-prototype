@@ -48,6 +48,9 @@ hie-prototype/
 │   │               clearInsuranceSecondary, addShareToken, revokeShareToken,
 │   │               appendLog, clearLog, clearAll
 │   │
+│   ├── progress.ts                 Profile completeness calculator
+│   │   └── exports: computeProgress(personal) → 0–100 (used by PageHeader)
+│   │
 │   ├── sharing.ts                  Share-token logic and clipboard text builder
 │   │   ├── imports: types.ts, schema.ts
 │   │   └── exports: ALL_SECTIONS, createShareToken, isTokenActive,

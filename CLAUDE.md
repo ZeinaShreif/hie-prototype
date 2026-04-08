@@ -26,6 +26,8 @@ src/
   core/         ← Layer 0. Pure logic, no React imports, no browser APIs
                    except via storage.ts. Never modify types.ts without
                    updating schema.test.ts.
+                   progress.ts           — computeProgress(personal) → 0–100 percentage
+                                           used by PageHeader progress bar
   components/   ← Layer 1 UI components
                    PageHeader.tsx        — navy header, avatar, progress bar, nav tabs,
                                            optional onSave prop, 2s success state, no-print
@@ -50,7 +52,7 @@ src/
   pages/        ← Layer 1 screen-level components (all complete)
                    LandingPage.tsx — home screen at /, folder-style nav, disclaimer modal,
                                      HealthPass branding; no PageHeader (standalone)
-                   LandingPage.test.tsx — 36 tests
+                   LandingPage.test.tsx — 29 tests
                    ProfilePage.tsx · InsurancePage.tsx · MedicationsPage.tsx
                    VaccinationsPage.tsx · ProceduresPage.tsx · OverviewPage.tsx (route /overview)
                    SharePage.tsx — section picker, QR hero, other sharing methods, access log
@@ -98,7 +100,7 @@ types.ts first.
 
 ## Running the project
 - Dev server: npm run dev
-- Tests: npm test (295 tests, 14 test files)
+- Tests: npm test (344 tests, 15 test files)
 - Watch mode: npm run test:watch
 
 ## Security notes (prototype)

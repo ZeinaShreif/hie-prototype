@@ -32,6 +32,8 @@ hie-prototype/
       store.ts                ✅ Zustand store
       sharing.ts              ✅ Layer 2 sharing logic
       accessLog.ts            ✅ Layer 3 access log logic
+      progress.ts             ✅ computeProgress(personal) → 0–100 % used by PageHeader
+      progress.test.ts        ✅
       schema.test.ts          ✅
       store.test.ts           ✅
       integration.test.ts     ✅
@@ -80,10 +82,10 @@ hie-prototype/
       pages.test.ts           ✅
   public/
     HealthPass.svg            ✅ Logo used in LandingPage Overview folder
-    App.tsx                   ✅ Routing only, no business logic
-    index.css                 ✅ Design tokens, hie-* classes, print styles (@page, .no-print, .print-only)
-    main.tsx                  React entry point, do not edit
-    test-setup.ts             Test bootstrap, do not edit
+  App.tsx                     ✅ Routing only, no business logic
+  index.css                   ✅ Design tokens, hie-* classes, print styles (@page, .no-print, .print-only)
+  main.tsx                    React entry point, do not edit
+  test-setup.ts               Test bootstrap, do not edit
   CLAUDE.md                   Instructions for Claude Code sessions
   ARCHITECTURE.md             This file
   FrontEnd_Instructions.md    Frontend developer guide
@@ -130,8 +132,7 @@ the shared `hie-*` component classes defined in `src/index.css`.
 `src/components/PageHeader.tsx` renders the persistent header shown
 on every page except `LandingPage`. It reads `record.personal` from
 the store (via `usePatientStore` selector) and renders:
-- Avatar circle showing the patient's initials (falls back to "PA"),
-  wrapped in a `<Link to="/">` so clicking it navigates back to LandingPage
+- Home icon button wrapped in a `<Link to="/">` so clicking it navigates back to LandingPage
 - Patient full name and today's formatted date (weekday, month, day, year)
 - "Save changes" button (UI only — wiring deferred)
 - Profile completeness progress bar (percentage of PersonalDetails fields filled)
