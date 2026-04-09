@@ -1,8 +1,10 @@
-# HIE Prototype
-
-A patient-controlled health information exchange prototype. Patients fill in their medical information once and share it with providers at check-in via QR code, link, clipboard, or print — eliminating the need to re-fill the same intake forms at every new provider.
+# HealthPass Prototype
 
 > **Prototype only.** No real PHI should ever be entered. Security and HIPAA compliance are deferred to Layer 4.
+
+This is the application prototype developed for the [TUL-Medical Wallet](https://github.com/TUL-Medical-Wallet/TUL-Medical-Wallet) project, part of The Upskilling Labs AI & Health Systems cohort (Q1 2026).
+
+A patient-controlled health information exchange prototype. Patients fill in their medical information once and share it with providers at check-in via QR code, link, clipboard, or print, eliminating the need to refill the same intake forms at every new provider.
 
 ---
 
@@ -15,6 +17,8 @@ A patient-controlled health information exchange prototype. Patients fill in the
 | 2 | Sharing | ✅ Complete |
 | 3 | Consent & audit log | ✅ Complete |
 | 4 | Production / HIPAA | ⬜ Deferred |
+
+> Layer 4 covers real backend storage, authentication, and HIPAA compliance — out of scope for this prototype.
 
 ---
 
@@ -33,12 +37,14 @@ A patient-controlled health information exchange prototype. Patients fill in the
 
 ## Getting started
 
+**Prerequisites**: Node.js 18+ and npm.
+
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173).
+Open the local URL shown in your terminal (typically http://localhost:5173).
 
 ---
 
